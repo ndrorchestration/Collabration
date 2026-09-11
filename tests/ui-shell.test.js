@@ -29,3 +29,11 @@ test('shell does not pretend a non-interactive search control exists', () => {
   assert.doesNotMatch(shell, /topbar-search/);
   assert.doesNotMatch(shell, /Search people, Spaces, sources, and projects/);
 });
+
+test('authenticated page derives a bounded presentation view and uses compact SpaceHeader', () => {
+  const page = read('apps/web/app/app/page.js');
+  assert.match(page, /const requestedView/);
+  assert.match(page, /home.*spaces.*people.*review.*account/s);
+  assert.match(page, /<SpaceHeader/);
+  assert.doesNotMatch(page, /<section className="space-hero">/);
+});
