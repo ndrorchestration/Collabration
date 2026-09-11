@@ -10,7 +10,8 @@ const reusableComponents = [
   '../apps/web/components/moderator-queue.js',
   '../apps/web/components/action-log-viewer.js',
   '../apps/web/components/profile-hover.js',
-  '../apps/web/components/trust-signals.js'
+  '../apps/web/components/trust-signals.js',
+  '../apps/web/components/context-drawer.js'
 ];
 
 test('reusable social components do not own demoStore directly', async () => {
