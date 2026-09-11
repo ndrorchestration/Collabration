@@ -264,6 +264,14 @@ export async function decideConnectionRequest(formData) {
   refreshApp();
 }
 
+export async function disconnectConnection(formData) {
+  const { supabase } = await authenticatedClient();
+  const requestId = requiredId(formData, 'request_id');
+  const { error } = await supabase.rpc('disconnect_connection', { p_request_id: requestId });
+  if (error) throw error;
+  refreshApp();
+}
+
 export async function requestAgentAction(formData) {
   const { supabase } = await authenticatedClient();
   const spaceId = requiredId(formData, 'space_id');
