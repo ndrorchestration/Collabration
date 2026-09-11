@@ -1,0 +1,7 @@
+{
+  "name": "@intellectro/governance",
+  "version": "0.0.1-alpha",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.js"
+}
