@@ -1,8 +1,20 @@
 import Link from 'next/link';
+import { DemoGovernanceRail } from '../components/demo-governance-rail';
 import { DemoSocialFeed } from '../components/demo-social-feed';
+import { CommunityStatePanel } from '../components/community-state-panel';
 import { PostCard } from '../components/post-card';
 import { demoAuthors, demoFeed, demoSpace } from '../lib/demo-data';
 import { resolveRuntimeMode } from '../lib/runtime-mode';
+
+const configuredPreviewMetrics = Object.freeze({
+  challenges: demoFeed.reduce((sum, post) => sum + (post.disputeSummary?.challenges ?? 0), 0),
+  qualifications: demoFeed.reduce((sum, post) => sum + (post.disputeSummary?.qualifications ?? 0), 0),
+  unresolvedQuestions: demoFeed.reduce((sum, post) => sum + (post.disputeSummary?.unresolvedQuestions ?? 0), 0),
+  awaitingApproval: demoFeed.filter((post) => post.kind === 'ai_assisted' && post.aiAssistance?.humanApproved === false).length,
+  sourceLinkedPosts: demoFeed.filter((post) => post.kind === 'source_linked' && post.sourceIds.length > 0).length,
+  humanPosts: demoFeed.filter((post) => post.kind === 'human').length,
+  claimResponses: 0
+});
 
 export default function HomePage() {
   const runtime = resolveRuntimeMode(process.env);
@@ -54,8 +66,15 @@ export default function HomePage() {
           : <DemoSocialFeed />}
       </section>
       <aside className="right-rail">
-        <section className="side-card"><p className="eyebrow">Governance pulse</p><h2>Context, not hidden authority</h2><div className="metric"><strong>3</strong><span>trust states visible in this preview</span></div><div className="metric"><strong>0</strong><span>autonomous public actions permitted</span></div><div className="metric"><strong>1</strong><span>illustrative agent output awaiting human approval</span></div></section>
-        <section className="side-card"><p className="eyebrow">How to read Intellectro</p><ol className="read-list"><li>Read normally.</li><li>Notice lightweight context chips.</li><li>Open context when trust matters.</li><li>Challenge, qualify, or add evidence when authenticated.</li></ol></section>
+        {configured ? (
+          <>
+            <CommunityStatePanel metrics={configuredPreviewMetrics} />
+            <section className="side-card">
+              <p className="eyebrow">How to read Intellectro</p>
+              <ol className="read-list"><li>Read normally.</li><li>Notice lightweight context chips.</li><li>Open context when trust matters.</li><li>Sign in for authenticated governed actions.</li></ol>
+            </section>
+          </>
+        ) : <DemoGovernanceRail />}
       </aside>
     </main>
   );
