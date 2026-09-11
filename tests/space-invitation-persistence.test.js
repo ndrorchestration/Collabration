@@ -37,6 +37,17 @@ test('admin invite and revoke RPCs derive actor identity and block forged role e
   assert.match(sql, /only Space admin may revoke invitation/i);
 });
 
+test('invitation creation is valid only while the Space is invite-only', () => {
+  const sql = read(migrationPath);
+  const start = sql.indexOf('create or replace function public.invite_to_space');
+  const end = sql.indexOf('create or replace function public.decide_space_invitation');
+  assert.ok(start >= 0 && end > start, 'invite_to_space function must be present before decide_space_invitation');
+  const inviteSql = sql.slice(start, end);
+  assert.match(inviteSql, /v_join_policy text/i);
+  assert.match(inviteSql, /select s\.join_policy into v_join_policy[\s\S]*from public\.spaces s[\s\S]*where s\.id = p_space_id/i);
+  assert.match(inviteSql, /if v_join_policy <> 'invite_only' then[\s\S]*raise exception 'Space does not require invitations'/i);
+});
+
 test('invitee-only decision path rechecks block state and atomically creates member membership', () => {
   const sql = read(migrationPath);
   assert.match(sql, /create or replace function public\.decide_space_invitation\(p_invitation_id uuid, p_decision text\)/i);
