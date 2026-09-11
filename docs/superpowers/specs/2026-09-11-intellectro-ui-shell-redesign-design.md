@@ -56,16 +56,17 @@ It should not require users to parse policy-version, capability, approval, prove
 
 ### 4.1 Left navigation
 
-Use a persistent left rail for first-class product destinations:
+Use a persistent left rail for currently implemented first-class product destinations:
 
 - Home
 - Spaces
 - People
-- Projects
-- Agent
 - Review, shown only when the user has review/moderation work
+- Account/Profile entry point
 
 Below the primary destinations, show a compact list of the user's Spaces.
+
+Projects and Personal Agent are future destinations and must not appear as functional navigation until those product objects actually exist. Navigation is a claim about available capability and must remain truthful.
 
 Do not place alpha-boundary explanations in the main navigation. A small system-status/about surface may remain available elsewhere.
 
@@ -99,19 +100,21 @@ At mobile widths the current design hides the left rail entirely, which removes 
 
 - compact top bar containing brand/current Space and context trigger;
 - full-width primary content;
-- bottom navigation: Home · Spaces · People · Agent · You;
+- bottom navigation for implemented destinations: Home · Spaces · People · You;
+- add Review to the mobile navigation only when the user has applicable review work;
+- add Agent later only when a real Personal Agent surface exists;
 - contextual sheets for Space switching, provenance, review details, and secondary actions.
 
-Projects can appear under Home/Spaces until the product has enough project volume to justify a dedicated mobile tab.
+Projects can appear under Home/Spaces until the product has enough project volume to justify a dedicated destination.
 
-No primary destination may disappear solely because viewport width is small.
+No implemented primary destination may disappear solely because viewport width is small.
 
 ## 6. Top bar and navigation affordances
 
 The current non-interactive element styled as "Search people, Spaces, sources, and projects" is misleading. Until real search exists:
 
 - do not render it as an editable-looking search field;
-- replace it with a neutral command/navigation launcher or compact current-context title;
+- replace it with a neutral current-context title or clearly non-search navigation control;
 - when real search is implemented later, use an actual input/dialog trigger with keyboard and screen-reader semantics.
 
 Account/sign-out state remains explicit and accessible.
@@ -236,11 +239,11 @@ The current persisted `/app` page contains too many independent workflows in one
 
 ### Projects
 
-Initially a navigation placeholder may be omitted until real project objects exist. Do not ship an empty fake destination.
+Do not render a Projects destination until real project/research objects exist. Current collaboration remains organized through Spaces and discussion.
 
 ### Agent
 
-Until a real Personal Agent exists, this destination should either be omitted or clearly labeled as unavailable/future. Do not simulate a functioning personal agent.
+Do not render a Personal Agent destination until a real Personal Agent exists. The current Community/Claim Agent governance surfaces remain available where they are relevant to Space/review context; they do not imply a personal assistant.
 
 ### Review
 
@@ -351,9 +354,10 @@ No database migration should be required for this UI PR.
 
 Add or update tests that mechanically protect:
 
-- primary destinations and role-gated Review visibility;
-- absence of fake search-input affordance before search exists;
-- human-authored baseline not rendered as mandatory repetitive badge;
+- only implemented primary destinations are exposed;
+- Review visibility is role/work gated;
+- no fake search-input affordance exists before search is implemented;
+- human-authored baseline is not rendered as a mandatory repetitive badge;
 - exceptional AI/source/pending/disputed states remain visible;
 - full context remains reachable;
 - mobile navigation remains available when desktop rail is hidden;
