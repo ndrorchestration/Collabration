@@ -53,6 +53,12 @@ Control states:
 
 Rate limits are part of the capability decision, not merely generic middleware.
 
+### Canonical machine contract
+
+[`../governance/capability-matrix.yaml`](../governance/capability-matrix.yaml) is the authority-bearing capability vocabulary for alpha agents, not illustrative configuration. The governance package parses and validates that file, agent tests derive runtime policy from it, and CI runs `npm run validate:governance` before the full test suite.
+
+Unknown or legacy capability names fail closed. Agent-specific policy copies should not be maintained outside the canonical matrix. A change that expands authority must therefore change the matrix explicitly and pass its invariant tests in addition to the normal governance-change requirements below.
+
 ## Non-negotiable invariants
 
 1. Every agent has an accountable owner.
