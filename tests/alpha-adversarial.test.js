@@ -10,6 +10,7 @@ const lifecycle = read('supabase/migrations/20260911052000_governed_action_lifec
 const provenance = read('supabase/migrations/20260911054000_provenance_receipt_boundary.sql');
 const correction = read('supabase/migrations/20260911056000_correction_appeal.sql');
 const safety = read('supabase/migrations/20260911050000_social_safety_hardening.sql');
+const relationships = read('supabase/migrations/20260911060000_connection_relationships.sql');
 const hardening = read('supabase/migrations/20260911034500_persisted_alpha_hardening.sql');
 const matrix = read('governance/capability-matrix.yaml');
 const page = read('apps/web/app/app/page.js');
@@ -55,10 +56,15 @@ test('authentication callback rejects protocol-relative redirects', () => {
   assert.match(callback, /return '\/app'/);
 });
 
-test('block and mute stay viewer-local and never become delete or ban authority', () => {
+test('mute stays viewer-local while block is a bounded bilateral privacy boundary without delete or ban authority', () => {
   assert.doesNotMatch(safety, /delete from public\.posts/i);
+  assert.doesNotMatch(relationships, /delete from public\.posts/i);
   assert.doesNotMatch(actions, /from\('posts'\)\.delete/);
-  assert.match(page, /neither silently bans or deletes/i);
+  assert.match(relationships, /create or replace function public\.block_user\(p_blocked_id uuid\)/i);
+  assert.match(relationships, /status = 'blocked'/i);
+  assert.match(page, /Mute hides a person's activity from your feed/i);
+  assert.match(page, /Block creates a bilateral privacy boundary/i);
+  assert.match(page, /without banning or deleting content for anyone else/i);
   assert.match(page, /excludedAuthorIds/);
 });
 

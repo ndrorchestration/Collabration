@@ -19,12 +19,15 @@ test('MVP roadmap marks repository-complete alpha features done while preserving
   const roadmap = read('docs/mvp-roadmap.md');
   assert.match(roadmap, /\[x\] Add basic reactions/);
   assert.match(roadmap, /\[x\] Add report, block, and mute/);
+  assert.match(roadmap, /\[x\] Add person-to-person connection-request lifecycle/);
+  assert.match(roadmap, /\[x\] Establish repository-level block\/privacy precedence/);
   assert.match(roadmap, /\[x\] Add permission inspector/);
   assert.match(roadmap, /\[x\] Add action-log viewer/);
   assert.match(roadmap, /\[x\] Add correction \/ appeal flow/);
   assert.match(roadmap, /\[x\] Moderator review queue/);
   assert.match(roadmap, /\[x\] Agent action\/audit persistence/);
-  assert.match(roadmap, /\[x\] Apply migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate/);
+  assert.match(roadmap, /\[x\] Apply the pre-relationship canonical migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate/);
+  assert.match(roadmap, /\[ \] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project/);
   assert.match(roadmap, /\[ \] Pass the production browser OTP\/PKCE\/session verification gate/);
   assert.match(roadmap, /\[ \] Exercise real model-backed product loop/);
 });

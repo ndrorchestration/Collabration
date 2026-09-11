@@ -22,14 +22,14 @@ PR #9 established the accepted governed/persisted-alpha repository base. Post-#9
 
 - [x] Create application shell
 - [x] Add authentication runtime wiring (validated SSR claims, PKCE callback, refresh-cookie proxy; production browser verification pending)
-- [x] Add profiles (persisted server-action path implemented; live database/RLS boundary verified)
+- [x] Add profiles (persisted server-action path implemented; live database/RLS boundary verified for the earlier admitted schema)
 - [x] Add Spaces/membership (atomic owner creation + join path implemented; live database/RLS boundary verified)
 - [x] Add posts and comments (human/source-linked post + comment persistence paths implemented; live database/RLS boundary verified)
 - [x] Add chronological feed
 - [x] Add basic reactions (authenticated path + membership-gated RLS; live member/non-member probe passed)
 - [x] Add report, block, and mute (authenticated UI/persistence paths implemented; report membership gate live-probed; realistic multi-account abuse behavior remains an alpha validation item)
-- [ ] Add person-to-person relationship/invitation semantics suitable for the initial collaboration wedge
-- [ ] Establish block/privacy precedence across relationship discovery and invitations
+- [x] Add person-to-person connection-request lifecycle: request, accept, decline, cancel, disconnect
+- [x] Establish repository-level block/privacy precedence across profile discovery, relationship visibility, request, and acceptance; live admission of the relationship migration remains pending
 
 ## Phase 2 — Governance-native interaction
 
@@ -61,11 +61,12 @@ PR #9 established the accepted governed/persisted-alpha repository base. Post-#9
 
 ## Phase 4 — Alpha validation
 
-- [x] Apply migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate
+- [x] Apply the pre-relationship canonical migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate
 - [x] Admit the governed-alpha database migrations and pass targeted live social-safety, governed-action, provenance, correction/appeal, replay, and cross-Space authority probes
-- [x] Add repository adversarial regression coverage for forged identity, capability self-expansion, replay, cross-Space moderation, direct audit/provenance bypass, unsafe redirect, and viewer-local safety semantics
+- [x] Add repository adversarial regression coverage for forged identity, capability self-expansion, replay, cross-Space moderation, direct audit/provenance bypass, unsafe redirect, viewer-local mute semantics, and bilateral block/relationship semantics
+- [ ] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project
 - [ ] Pass the production browser OTP/PKCE/session verification gate
-- [ ] Run realistic multi-account challenge/report/block/mute and rate-limit abuse tests
+- [ ] Run realistic multi-account challenge/report/block/mute/connection and rate-limit abuse tests
 - [ ] Run Contextual Trust Comprehension formative study
 - [ ] Measure governance burden
 - [ ] Evaluate summary faithfulness
@@ -79,12 +80,12 @@ External runtime, operations, real-model product-loop, and evaluation completion
 
 This phase turns discussion into useful shared work before broad agent autonomy.
 
-- [ ] Connections/friend requests or another deliberately chosen relationship model
+- [x] Connections/friend requests implemented as explicit mutual connection lifecycle; human connection grants no agent capability, Space role, or governance authority
 - [ ] Space invitations with explicit acceptance/revocation
 - [ ] Minimal shared work object: research question/project
 - [ ] Minimal task/artifact/outcome representation
 - [ ] Conversation-to-project conversion without losing source/discussion lineage
-- [ ] Multi-user access/RLS and privacy/block precedence tests
+- [ ] Live multi-user relationship/RLS and privacy/block-precedence probes
 - [ ] Observe at least one repeated useful collaborative-outcome loop with real users before expanding scope
 
 Product target:

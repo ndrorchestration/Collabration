@@ -2,9 +2,9 @@
 
 ## Scope
 
-This threat model covers the Intellectro social vertical slice and persisted-alpha boundary: profiles/membership, chronological posts and comments, source-linked claims, contextual responses, trust/context disclosure, Supabase SSR authentication/persistence wiring, RLS policy design, governed pending-action/provenance records, correction/appeal records, and bounded Community/Claim agents.
+This threat model covers the Intellectro social vertical slice and persisted-alpha boundary: profiles/membership, person-to-person connection requests, bilateral block/privacy precedence, chronological posts and comments, source-linked claims, contextual responses, trust/context disclosure, Supabase SSR authentication/persistence wiring, RLS policy design, governed pending-action/provenance records, correction/appeal records, and bounded Community/Claim agents.
 
-It does **not** authorize autonomous public posting, policy mutation by agents, algorithmic ranking, federation, an agent marketplace, or admission of real user data merely because repository controls exist. Production/runtime readiness remains separately gated by live configuration and browser evidence.
+It does **not** authorize autonomous public posting, policy mutation by agents, algorithmic ranking, federation, an agent marketplace, or admission of real user data merely because repository controls exist. Production/runtime readiness remains separately gated by live configuration and browser evidence. A human social connection is not an agent capability, Space role, or governance authorization.
 
 ## Protected properties
 
@@ -17,6 +17,7 @@ It does **not** authorize autonomous public posting, policy mutation by agents, 
 7. **Ranking legibility** — the alpha feed remains chronological and cannot silently optimize engagement.
 8. **Session isolation** — authenticated SSR responses cannot leak one user's session into another request/cache path.
 9. **Correction integrity** — correction/appeal history is appended without silently rewriting the original post or governed action.
+10. **Relationship/privacy integrity** — connection state is explicit and auditable; a bilateral block defeats discovery, request, acceptance, and active relationship visibility without granting delete/ban authority.
 
 ## Threats and controls
 
@@ -30,15 +31,15 @@ It does **not** authorize autonomous public posting, policy mutation by agents, 
 
 **Failure:** users interpret “source-linked” or a provenance receipt as “verified true.”
 
-**Controls:** UI language states that provenance records origin/transformation, not truth; support/challenge/qualify remain open; provenance code and the approved-action receipt boundary synthesize no `truth`, `verified`, or confidence field.
+**Controls:** UI language states that provenance records origin/transformation, not truth; support/challenge/qualify remain open; provenance code, Content Passport contract, and approved-action receipt boundary synthesize no truth/correctness/certification claim. Content Passport currentness reports only whether bound source revisions match known current revisions.
 
 ### T3 — RLS bypass permits cross-user or cross-Space mutation
 
 **Failure:** a client writes content on behalf of another user or posts into a Space they have not joined.
 
-**Controls:** RLS on every runtime table; server actions derive actor identity from validated claims; post/comment/context-response policies bind identity to `auth.uid()` and require Space membership; direct source-link mutation is restricted to the post author; governed audit/provenance tables retain no general ordinary-client INSERT policy.
+**Controls:** RLS on every admitted runtime table; server actions derive actor identity from validated claims; post/comment/context-response policies bind identity to `auth.uid()` and require Space membership; direct source-link mutation is restricted to the post author; governed audit/provenance tables retain no general ordinary-client INSERT policy. The relationship candidate likewise uses RPC-only mutation for connection state and derives requester/decision actor identity from `auth.uid()`.
 
-**Evidence state:** the dedicated Supabase project's earlier live multi-user DB/RLS matrix passed and was cleaned afterward. The completion-branch migrations for social-safety hardening, governed-action lifecycle, provenance receipts, and correction/appeal are **NOT VERIFIED live yet** and must be admitted and re-tested before the runtime/security gate can pass.
+**Evidence state:** the dedicated Supabase project's admitted pre-relationship multi-user DB/RLS/ACL/atomicity matrix passed and was cleaned afterward. The new connection-relationship migration is repository-verified only until it is separately applied and live-probed; its existence in GitHub does not extend the prior live verdict.
 
 ### T4 — Approval spoofing or replay
 
@@ -48,11 +49,11 @@ It does **not** authorize autonomous public posting, policy mutation by agents, 
 
 **Residual boundary:** these repository controls create and decide governance records only. Real model execution, artifact publication, and the full persisted product loop remain separate runtime/product-loop gates.
 
-### T5 — Challenge mechanics become harassment or reputation attacks
+### T5 — Challenge or social-safety mechanics become harassment or hidden authority
 
-**Failure:** “Challenge” is used as a social downvote rather than an evidence/context interaction.
+**Failure:** “Challenge” is used as a social downvote, mute becomes an authority change, or block silently bans/deletes another person's content.
 
-**Controls:** challenge/qualify are typed contextual actions, coexist with ordinary reactions, and do not alter feed rank. Report, mute, and block paths are available without silently mutating another person's content. Real multi-account abuse testing remains a live alpha evidence gate.
+**Controls:** challenge/qualify are typed contextual actions, coexist with ordinary reactions, and do not alter feed rank. Mute remains viewer-local presentation filtering. Block is stronger but narrowly defined: the authenticated `block_user` RPC creates the bilateral privacy boundary and terminates pending/accepted connection state without deleting another person's posts or granting moderation/ban authority. Real multi-account abuse testing remains a live alpha evidence gate.
 
 ### T6 — Hidden engagement ranking appears in the feed
 
@@ -76,13 +77,13 @@ It does **not** authorize autonomous public posting, policy mutation by agents, 
 
 **Failure:** automated flags, summaries, annotations, or drafts silently delete, ban, publish, alter policy, or expand capability.
 
-**Controls:** canonical policy denies delete/ban/change-policy/grant-capability/self-escalation; public draft/annotation capabilities remain approval-required; the browser has no direct `agent_actions` INSERT policy; the narrow request RPC permits only explicit approval-required alpha pairs and creates a pending review record rather than executing or publishing anything.
+**Controls:** canonical policy denies delete/ban/change-policy/grant-capability/self-escalation; public draft/annotation capabilities remain approval-required; the browser has no direct `agent_actions` INSERT policy; the narrow request RPC permits only explicit approval-required alpha pairs and creates a pending review record rather than executing or publishing anything. Human connection state does not appear in the capability matrix and cannot confer agent authority.
 
 ### T10 — Repository schema is treated as production-safe without live admission testing
 
-**Failure:** structural migration tests are mistaken for proof that the current completion candidate behaves correctly in the live Supabase/runtime environment.
+**Failure:** structural migration tests are mistaken for proof that a new repository candidate behaves correctly in the live Supabase/runtime environment.
 
-**Controls:** the earlier dedicated-project DB/RLS baseline is recorded separately from current candidate admission. Every new completion migration must be applied in order to the dedicated Intellectro project, security advisors re-run, and targeted positive/negative live probes repeated before current-candidate live database behavior is promoted. Browser auth/session Gate B remains **NOT VERIFIED** until exercised against configured production.
+**Controls:** admitted dedicated-project DB/RLS evidence is recorded separately from later repository candidates. Every new migration must be applied in order to the dedicated Intellectro project, security advisors re-run, and targeted positive/negative live probes repeated before that migration's live behavior is promoted. The connection-relationship migration is therefore **NOT VERIFIED live** until its own admission/probe wave completes. Browser auth/session Gate B remains **NOT VERIFIED** until exercised against configured production.
 
 ### T11 — SSR session/callback leakage or redirect abuse
 
@@ -98,17 +99,25 @@ It does **not** authorize autonomous public posting, policy mutation by agents, 
 
 **Controls:** `correction_requests` targets exactly one post or governed action; requester identity comes from `auth.uid()`; resolution is moderator-scoped to the target Space; the row is locked and only open requests can transition; the correction path updates only its own request ledger and never rewrites original post/action content. The UI states that original records remain unchanged.
 
+### T13 — Relationship state bypasses privacy or silently grants authority
+
+**Failure:** a client forges the requester/recipient/decision actor, accepts a request after an intervening block, continues discovering a blocked profile through direct database reads, resurrects a connection after unblock, or treats friendship as permission for an agent or Space role.
+
+**Controls:** `request_connection`, `decide_connection_request`, `disconnect_connection`, and `block_user` derive the acting user from `auth.uid()`; ordinary browser roles have no direct INSERT/UPDATE/DELETE policy for connection state; only the recipient accepts/declines and only the requester cancels; either participant may disconnect an accepted relationship; acceptance re-checks bilateral block state under row lock; block terminates pending/accepted relationships into a terminal `blocked` state and records `ended_at` without rewriting the earlier acceptance decision time; profile and connection-read RLS use bilateral block-aware visibility; the UI explicitly states that a connection grants no agent permission, Space role, or governance authority.
+
+**Evidence state:** these controls are repository-tested. Their migration and live multi-user behavior are **NOT VERIFIED live** until separately admitted to the dedicated Supabase project.
+
 ## Residual risk / next required evidence
 
 Before the alpha can be called complete:
 
-- apply the completion-branch migrations to the dedicated Intellectro Supabase project in canonical order;
-- re-run Supabase security advisors and targeted live positive/negative probes for reactions/reports, governed request/decision replay, provenance receipt authority, and correction/appeal authority;
+- apply the connection-relationship migration to the dedicated Intellectro Supabase project only after its repository candidate is admitted;
+- re-run Supabase security advisors and targeted live positive/negative probes for relationship request/decision/disconnect/block races, reciprocal profile hiding, connection-row visibility, reactions/reports, governed request/decision replay, provenance receipt authority, and correction/appeal authority;
 - configure the Vercel public Supabase environment and Supabase Auth Site URL/redirect allow-list;
 - verify real browser sign-in, callback, refresh, sign-out, unsafe-redirect rejection, and second-user session/cache isolation (**Gate B remains NOT VERIFIED until then**);
 - exercise the persisted product loop without a privileged browser bypass;
 - keep real model-provider execution fail-closed until a server-only provider path is explicitly configured and separately tested;
-- abuse-test challenge/report/block/mute paths with realistic multi-account behavior;
+- abuse-test challenge/report/block/mute/connection paths with realistic multi-account behavior;
 - review rate limits using realistic multi-account behavior;
 - establish mainline required-check protection if supported, otherwise retain the missing control as an explicit operations blocker;
 - verify runtime evidence capture, rollback/recovery expectations, logging, secret management, and incident response;

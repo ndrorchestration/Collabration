@@ -10,11 +10,14 @@ import {
   createPost,
   createSpace,
   decideAgentAction,
+  decideConnectionRequest,
+  disconnectConnection,
   joinSpace,
   muteMember,
   removeReaction,
   reportPost,
   requestAgentAction,
+  requestConnection,
   requestCorrectionOrAppeal,
   resolveCorrectionOrAppeal,
   setReaction,
@@ -52,6 +55,10 @@ function correctionTargetSpaceId(request) {
   return request.posts?.space_id ?? request.agent_actions?.space_id ?? null;
 }
 
+function connectionCounterpartId(connection, userId) {
+  return connection.requester_id === userId ? connection.recipient_id : connection.requester_id;
+}
+
 export default async function PersistedAppPage({ searchParams }) {
   const config = getSupabasePublicConfig();
   if (!config.configured) {
@@ -74,12 +81,26 @@ export default async function PersistedAppPage({ searchParams }) {
 
   const userId = claims.sub;
   const params = await searchParams;
-  const [{ data: profile }, { data: memberships = [] }, { data: spaces = [] }, { data: blocks = [] }, { data: mutes = [] }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: memberships = [] },
+    { data: spaces = [] },
+    { data: blocks = [] },
+    { data: mutes = [] },
+    { data: discoverableProfiles = [] },
+    { data: connectionRows = [] }
+  ] = await Promise.all([
     supabase.from('profiles').select('id,handle,display_name,bio').eq('id', userId).maybeSingle(),
     supabase.from('space_memberships').select('space_id,role,created_at').eq('user_id', userId).order('created_at', { ascending: true }),
     supabase.from('spaces').select('id,slug,name,description,created_at').order('created_at', { ascending: true }),
     supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
-    supabase.from('mutes').select('muted_id').eq('muter_id', userId)
+    supabase.from('mutes').select('muted_id').eq('muter_id', userId),
+    supabase.from('profiles').select('id,handle,display_name').order('display_name', { ascending: true }).limit(50),
+    supabase
+      .from('connection_requests')
+      .select('id,requester_id,recipient_id,status,created_at,decided_at,ended_at')
+      .in('status', ['pending', 'accepted'])
+      .order('created_at', { ascending: false })
   ]);
 
   const blockedIds = new Set(blocks.map((row) => row.blocked_id));
@@ -93,6 +114,17 @@ export default async function PersistedAppPage({ searchParams }) {
   const activeMembership = memberships.find((membership) => membership.space_id === activeSpaceId);
   const canModerate = ['moderator', 'admin'].includes(activeMembership?.role);
   const availableSpaces = spaces.filter((space) => !membershipIds.has(space.id));
+
+  const incomingConnectionRequests = connectionRows.filter((row) => row.status === 'pending' && row.recipient_id === userId);
+  const outgoingConnectionRequests = connectionRows.filter((row) => row.status === 'pending' && row.requester_id === userId);
+  const acceptedConnections = connectionRows.filter((row) => row.status === 'accepted');
+  const activeConnectionUserIds = new Set(
+    connectionRows
+      .flatMap((row) => [row.requester_id, row.recipient_id])
+      .filter((id) => id !== userId)
+  );
+  const discoverablePeople = discoverableProfiles.filter((person) => person.id !== userId && !activeConnectionUserIds.has(person.id));
+  const peopleMap = byId(discoverableProfiles);
 
   let posts = [];
   let authorMap = {};
@@ -187,6 +219,43 @@ export default async function PersistedAppPage({ searchParams }) {
           </form>
         </details>
 
+        <details className="composer-card" open={incomingConnectionRequests.length > 0}>
+          <summary>Connections · {acceptedConnections.length} connected</summary>
+          <p className="context-note">Connections are human social relationships. They do not grant agent permissions, Space roles, or governance authority.</p>
+
+          {acceptedConnections.length > 0 && <div>
+            <p className="eyebrow">Connected</p>
+            {acceptedConnections.map((connection) => {
+              const counterpartId = connectionCounterpartId(connection, userId);
+              const person = peopleMap[counterpartId];
+              return <div className="context-note" key={connection.id}><strong>{person?.display_name ?? person?.handle ?? counterpartId.slice(0, 8)}</strong>{person?.handle && <> · @{person.handle}</>}<form action={disconnectConnection}><input type="hidden" name="request_id" value={connection.id} /><button type="submit" className="secondary-button">Disconnect</button></form></div>;
+            })}
+          </div>}
+
+          {incomingConnectionRequests.length > 0 && <div>
+            <p className="eyebrow">Incoming requests</p>
+            {incomingConnectionRequests.map((connection) => {
+              const person = peopleMap[connection.requester_id];
+              return <div className="context-note" key={connection.id}><strong>{person?.display_name ?? person?.handle ?? connection.requester_id.slice(0, 8)}</strong>{person?.handle && <> · @{person.handle}</>}<div className="trust-row"><form action={decideConnectionRequest}><input type="hidden" name="request_id" value={connection.id} /><input type="hidden" name="decision" value="accepted" /><button type="submit" className="secondary-button">Accept</button></form><form action={decideConnectionRequest}><input type="hidden" name="request_id" value={connection.id} /><input type="hidden" name="decision" value="declined" /><button type="submit" className="secondary-button">Decline</button></form></div></div>;
+            })}
+          </div>}
+
+          {outgoingConnectionRequests.length > 0 && <div>
+            <p className="eyebrow">Sent requests</p>
+            {outgoingConnectionRequests.map((connection) => {
+              const person = peopleMap[connection.recipient_id];
+              return <div className="context-note" key={connection.id}><strong>{person?.display_name ?? person?.handle ?? connection.recipient_id.slice(0, 8)}</strong>{person?.handle && <> · @{person.handle}</>}<form action={decideConnectionRequest}><input type="hidden" name="request_id" value={connection.id} /><input type="hidden" name="decision" value="cancelled" /><button type="submit" className="secondary-button">Cancel request</button></form></div>;
+            })}
+          </div>}
+
+          {discoverablePeople.length > 0 && <div>
+            <p className="eyebrow">People</p>
+            {discoverablePeople.map((person) => <form action={requestConnection} className="login-form" key={person.id}><input type="hidden" name="target_user_id" value={person.id} /><span className="context-note"><strong>{person.display_name || person.handle}</strong>{person.handle && <> · @{person.handle}</>}</span><button type="submit" className="secondary-button">Connect</button></form>)}
+          </div>}
+
+          {acceptedConnections.length === 0 && incomingConnectionRequests.length === 0 && outgoingConnectionRequests.length === 0 && discoverablePeople.length === 0 && <p className="context-note">No discoverable people or active connection requests yet.</p>}
+        </details>
+
         <details className="composer-card">
           <summary>Create a governed Space</summary>
           <form action={createSpace} className="login-form">
@@ -272,7 +341,7 @@ export default async function PersistedAppPage({ searchParams }) {
           {correctionRequests.length === 0 && <p className="context-note">No correction or appeal requests are visible for this Space.</p>}
           {correctionRequests.map((request) => <div className="context-note" key={request.id}><strong>{request.request_kind}</strong> · {request.status}<br />{request.request_text}<br />target: {request.post_id ? `post ${request.post_id.slice(0, 8)}` : `action ${request.action_id?.slice(0, 8)}`}{request.resolution_note && <><br />resolution: {request.resolution_note}</>}{canModerate && request.status === 'open' && <form action={resolveCorrectionOrAppeal} className="login-form"><input type="hidden" name="request_id" value={request.id} /><select name="status" defaultValue="accepted"><option value="accepted">Accept</option><option value="rejected">Reject</option><option value="resolved">Resolve without acceptance/rejection</option></select><textarea name="resolution_note" placeholder="Human resolution note" /><button type="submit">Resolve request</button></form>}</div>)}
         </details>
-        <section className="side-card"><p className="eyebrow">Safety controls</p><p>Mute hides a person's activity from your feed. Block also hides it; neither silently bans or deletes that person's content for anyone else.</p>{safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}{safetyIds.map((id) => { const member = safetyProfileMap[id]; return <div key={id} className="context-note"><strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>{mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}{blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}</div>; })}</section>
+        <section className="side-card"><p className="eyebrow">Safety controls</p><p>Mute hides a person's activity from your feed. Block creates a bilateral privacy boundary, hides blocked profiles at the database boundary, and ends any pending or accepted connection without banning or deleting content for anyone else.</p>{safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}{safetyIds.map((id) => { const member = safetyProfileMap[id]; return <div key={id} className="context-note"><strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>{mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}{blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}</div>; })}</section>
       </aside>
     </main>
   );

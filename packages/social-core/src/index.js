@@ -1,9 +1,80 @@
 const POST_KINDS = new Set(['human', 'source_linked', 'ai_assisted']);
 const RESPONSE_TYPES = new Set(['support', 'challenge', 'qualify', 'add_evidence', 'ask_question']);
+const CONNECTION_DECISIONS = new Set(['accepted', 'declined', 'cancelled']);
 
 function requireText(value, name) {
   if (typeof value !== 'string' || value.trim() === '') throw new TypeError(`${name} is required`);
   return value.trim();
+}
+
+function requireDateTime(value, name) {
+  const normalized = requireText(value, name);
+  if (Number.isNaN(Date.parse(normalized))) throw new TypeError(`${name} must be an ISO date-time`);
+  return normalized;
+}
+
+export function createConnectionRequest({ id, requesterId, recipientId, createdAt }) {
+  const normalizedId = requireText(id, 'id');
+  const requester = requireText(requesterId, 'requesterId');
+  const recipient = requireText(recipientId, 'recipientId');
+  const created = requireDateTime(createdAt, 'createdAt');
+  if (requester === recipient) throw new Error('connection request requires different users');
+
+  return Object.freeze({
+    id: normalizedId,
+    requesterId: requester,
+    recipientId: recipient,
+    status: 'pending',
+    createdAt: created,
+    decidedAt: null
+  });
+}
+
+export function transitionConnectionRequest(request, { actorId, decision, decidedAt }) {
+  if (!request || typeof request !== 'object') throw new TypeError('connection request is required');
+  if (request.status !== 'pending') throw new Error('connection request must be pending');
+  const actor = requireText(actorId, 'actorId');
+  const normalizedDecision = requireText(decision, 'decision');
+  const decided = requireDateTime(decidedAt, 'decidedAt');
+  if (!CONNECTION_DECISIONS.has(normalizedDecision)) throw new TypeError(`unsupported connection decision: ${normalizedDecision}`);
+
+  if (normalizedDecision === 'cancelled') {
+    if (actor !== request.requesterId) throw new Error('only the requester may cancel a connection request');
+  } else if (actor !== request.recipientId) {
+    throw new Error('only the recipient may accept or decline a connection request');
+  }
+
+  return Object.freeze({ ...request, status: normalizedDecision, decidedAt: decided });
+}
+
+export function disconnectAcceptedConnection(connection, { actorId, endedAt }) {
+  if (!connection || typeof connection !== 'object') throw new TypeError('connection is required');
+  if (connection.status !== 'accepted') throw new Error('connection must be accepted');
+  const actor = requireText(actorId, 'actorId');
+  const ended = requireDateTime(endedAt, 'endedAt');
+  if (actor !== connection.requesterId && actor !== connection.recipientId) {
+    throw new Error('only a connection participant may disconnect');
+  }
+  return Object.freeze({ ...connection, status: 'disconnected', endedAt: ended });
+}
+
+export function evaluateConnectionAccess({ viewerId, targetId, blocks = [] }) {
+  const viewer = requireText(viewerId, 'viewerId');
+  const target = requireText(targetId, 'targetId');
+  if (viewer === target) throw new Error('connection access requires different users');
+  if (!Array.isArray(blocks)) throw new TypeError('blocks must be an array');
+
+  const blocked = blocks.some((entry) => entry && (
+    (entry.blockerId === viewer && entry.blockedId === target)
+    || (entry.blockerId === target && entry.blockedId === viewer)
+  ));
+
+  return Object.freeze({
+    blocked,
+    discoverable: !blocked,
+    canInvite: !blocked,
+    canConnect: !blocked
+  });
 }
 
 export function createSocialPost({ id, authorId, text, kind = 'human', sourceIds = [], aiAssistance = null, disputeSummary = null, createdAt }) {
