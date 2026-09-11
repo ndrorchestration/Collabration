@@ -37,6 +37,10 @@ test('Space admins can set join policy, invite discoverable people, and revoke p
   assert.match(spaces, /Sent invitations/);
 });
 
+test('admin invitation controls render only for invite-only Spaces', () => {
+  assert.match(spaces, /space\.join_policy === 'invite_only'\s*&&\s*invitablePeople\.length > 0\s*&&\s*\(/);
+});
+
 test('invitation UI never submits inviter, actor, or membership role identity', () => {
   assert.doesNotMatch(spaces, /name="(?:inviter_id|actor_id|role)"/);
 });
