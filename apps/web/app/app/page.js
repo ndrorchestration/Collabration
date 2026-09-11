@@ -15,6 +15,8 @@ import {
   removeReaction,
   reportPost,
   requestAgentAction,
+  requestCorrectionOrAppeal,
+  resolveCorrectionOrAppeal,
   setReaction,
   unblockMember,
   unmuteMember,
@@ -91,8 +93,9 @@ export default async function PersistedAppPage({ searchParams }) {
   let posts = [];
   let authorMap = {};
   let agentActions = [];
+  let correctionRequests = [];
   if (activeSpace) {
-    const [{ data: persistedPosts = [] }, { data: governedActions = [] }] = await Promise.all([
+    const [{ data: persistedPosts = [] }, { data: governedActions = [] }, { data: visibleCorrections = [] }] = await Promise.all([
       supabase
         .from('posts')
         .select('id,author_id,body,kind,ai_assisted,ai_assistance_type,agent_id,human_approved,created_at,post_sources(source_id,sources(id,url,title,publisher)),comments(id,author_id,body,created_at),claim_responses(id,author_id,response_type,body,created_at),reactions(user_id,reaction)')
@@ -104,10 +107,21 @@ export default async function PersistedAppPage({ searchParams }) {
         .select('id,agent_id,owner_id,action,capability,policy_version,approval_status,created_at,approval_records(id,approver_id,decision,note,created_at)')
         .eq('space_id', activeSpace.id)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(20),
+      supabase
+        .from('correction_requests')
+        .select('id,requester_id,post_id,action_id,request_kind,request_text,status,resolution_note,resolved_by,created_at,resolved_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
     ]);
     posts = filterVisibleDiscussion(persistedPosts, excludedAuthorIds);
     agentActions = governedActions;
+    const activePostIds = new Set(persistedPosts.map((post) => post.id));
+    const activeActionIds = new Set(governedActions.map((action) => action.id));
+    correctionRequests = visibleCorrections.filter((request) =>
+      (request.post_id && activePostIds.has(request.post_id)) ||
+      (request.action_id && activeActionIds.has(request.action_id))
+    );
 
     const authorIds = [...new Set(posts.flatMap((post) => [
       post.author_id,
@@ -121,6 +135,7 @@ export default async function PersistedAppPage({ searchParams }) {
   }
 
   const pendingActions = agentActions.filter((action) => action.approval_status === 'pending');
+  const openCorrections = correctionRequests.filter((request) => request.status === 'open');
   let safetyProfileMap = {};
   const safetyIds = [...excludedAuthorIds];
   if (safetyIds.length) {
@@ -213,6 +228,7 @@ export default async function PersistedAppPage({ searchParams }) {
               <details><summary>Comment</summary><form action={createComment} className="login-form"><input type="hidden" name="post_id" value={post.id} /><textarea name="body" required /><button type="submit">Add comment</button></form></details>
               <details><summary>Respond with context</summary><form action={createClaimResponse} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="response_type" defaultValue="challenge"><option value="support">Support</option><option value="challenge">Challenge</option><option value="qualify">Qualify</option><option value="add_evidence">Add evidence</option><option value="ask_question">Ask question</option></select><textarea name="body" required /><button type="submit">Add contextual response</button></form></details>
               <details><summary>Report post</summary><form action={reportPost} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="reason" defaultValue="misleading"><option value="spam">Spam</option><option value="harassment">Harassment</option><option value="misleading">Misleading</option><option value="other">Other</option></select><button type="submit">Submit report</button></form></details>
+              <details><summary>Request correction or appeal</summary><form action={requestCorrectionOrAppeal} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="request_kind" defaultValue="correction"><option value="correction">Correction</option><option value="appeal">Appeal</option></select><textarea name="request_text" placeholder="Explain what should be reviewed. The original post will remain unchanged." required /><button type="submit">Record request</button></form></details>
               {post.author_id !== userId && <div className="trust-row"><form action={muteMember}><input type="hidden" name="target_user_id" value={post.author_id} /><button type="submit" className="secondary-button">Mute author</button></form><form action={blockMember}><input type="hidden" name="target_user_id" value={post.author_id} /><button type="submit" className="secondary-button">Block author</button></form></div>}
             </article>
           );
@@ -237,7 +253,13 @@ export default async function PersistedAppPage({ searchParams }) {
           <summary>Governed action log · {agentActions.length}</summary>
           <p className="context-note">This view is read-only and constrained by database RLS.</p>
           {agentActions.length === 0 && <p className="context-note">No governed agent actions are visible for this Space.</p>}
-          {agentActions.map((action) => <div className="context-note" key={action.id}><strong>{action.agent_id}</strong> · {action.capability} · {action.approval_status}<br />policy {action.policy_version} · {formatDate(action.created_at)}{(action.approval_records ?? []).map((approval) => <span key={approval.id}><br />human decision: {approval.decision}</span>)}</div>)}
+          {agentActions.map((action) => <div className="context-note" key={action.id}><strong>{action.agent_id}</strong> · {action.capability} · {action.approval_status}<br />policy {action.policy_version} · {formatDate(action.created_at)}{(action.approval_records ?? []).map((approval) => <span key={approval.id}><br />human decision: {approval.decision}</span>)}<form action={requestCorrectionOrAppeal} className="login-form"><input type="hidden" name="action_id" value={action.id} /><input type="hidden" name="request_kind" value="appeal" /><textarea name="request_text" placeholder="Request review of this governed action. The original record remains unchanged." required /><button type="submit">Request appeal</button></form></div>)}
+        </details>
+        <details className="side-card" open={canModerate && openCorrections.length > 0}>
+          <summary>Correction and appeal queue · {openCorrections.length}</summary>
+          <p className="context-note">Original records remain unchanged. Resolution appends human review metadata to the request ledger.</p>
+          {correctionRequests.length === 0 && <p className="context-note">No correction or appeal requests are visible for this Space.</p>}
+          {correctionRequests.map((request) => <div className="context-note" key={request.id}><strong>{request.request_kind}</strong> · {request.status}<br />{request.request_text}<br />target: {request.post_id ? `post ${request.post_id.slice(0, 8)}` : `action ${request.action_id?.slice(0, 8)}`}{request.resolution_note && <><br />resolution: {request.resolution_note}</>}{canModerate && request.status === 'open' && <form action={resolveCorrectionOrAppeal} className="login-form"><input type="hidden" name="request_id" value={request.id} /><select name="status" defaultValue="accepted"><option value="accepted">Accept</option><option value="rejected">Reject</option><option value="resolved">Resolve without acceptance/rejection</option></select><textarea name="resolution_note" placeholder="Human resolution note" /><button type="submit">Resolve request</button></form>}</div>)}
         </details>
         <section className="side-card"><p className="eyebrow">Safety controls</p><p>Mute hides a person's activity from your feed. Block also hides it; neither silently bans or deletes that person's content for anyone else.</p>{safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}{safetyIds.map((id) => { const member = safetyProfileMap[id]; return <div key={id} className="context-note"><strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>{mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}{blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}</div>; })}</section>
       </aside>
