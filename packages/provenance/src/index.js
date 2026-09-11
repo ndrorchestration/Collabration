@@ -11,3 +11,13 @@ export function createProvenanceRecord({ sourceObjects, transformations = [], ge
   assertProvenanceRecord(record);
   return Object.freeze(record);
 }
+
+export function createContentPassport({ subject, sourceRevisions, transformations = [], responsibleActors, generatedAt }) {
+  return {
+    subject: { ...subject },
+    sourceRevisions: [...(sourceRevisions ?? [])].map((source) => ({ ...source })),
+    transformations: [...transformations],
+    responsibleActors: [...(responsibleActors ?? [])].map((actor) => ({ ...actor })),
+    generatedAt
+  };
+}
