@@ -1,7 +1,6 @@
-import { readFileSync } from 'node:fs';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { buildPermissionInspection, loadCapabilityMatrix } from '../../../../packages/governance/src/index.js';
+import { ALPHA_CAPABILITY_MATRIX, buildPermissionInspection } from '../../../../packages/governance/src/index.js';
 import { getSupabasePublicConfig } from '../../lib/supabase/env';
 import { createClient } from '../../lib/supabase/server';
 import {
@@ -22,12 +21,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const capabilityMatrix = loadCapabilityMatrix(
-  readFileSync(new URL('../../../../governance/capability-matrix.yaml', import.meta.url).pathname, 'utf8')
-);
 const permissionInspections = [
-  buildPermissionInspection(capabilityMatrix, 'community_agent'),
-  buildPermissionInspection(capabilityMatrix, 'claim_agent')
+  buildPermissionInspection(ALPHA_CAPABILITY_MATRIX, 'community_agent'),
+  buildPermissionInspection(ALPHA_CAPABILITY_MATRIX, 'claim_agent')
 ];
 
 function byId(rows = []) {
