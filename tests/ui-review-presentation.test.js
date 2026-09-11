@@ -13,9 +13,18 @@ test('review panel renders existing governed review state without querying data'
   assert.doesNotMatch(review, /createClient|supabase|from\('/);
 });
 
-test('spaces panel only binds existing create and join actions', () => {
+test('spaces panel binds human Space access actions without taking on governed-review authority', () => {
   const spaces = read('apps/web/components/spaces-panel.js');
-  assert.match(spaces, /createSpace/);
-  assert.match(spaces, /joinSpace/);
-  assert.doesNotMatch(spaces, /agent|approval|capability/i);
+  for (const action of [
+    'createSpace',
+    'joinSpace',
+    'inviteToSpace',
+    'decideSpaceInvitation',
+    'revokeSpaceInvitation',
+    'setSpaceJoinPolicy'
+  ]) {
+    assert.match(spaces, new RegExp(`\\b${action}\\b`));
+  }
+  assert.match(spaces, /do not grant moderator, admin, agent, or governance authority/i);
+  assert.doesNotMatch(spaces, /decideAgentAction|requestAgentAction|approval_records|Permission inspector|Moderator review queue/);
 });
