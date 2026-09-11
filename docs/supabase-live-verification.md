@@ -4,7 +4,7 @@
 
 **NOT VERIFIED · DATABASE/RLS COMPLETION CANDIDATE PASSED · BROWSER AUTH/SESSION GATE PENDING**
 
-A dedicated Intellectro Supabase project exists and has passed live schema admission, the original multi-user RLS/atomicity matrix, and the alpha-completion candidate's targeted social-safety, governed-action, provenance, and correction/appeal probes. The project remains clean of the disposable verification data. End-to-end browser authentication/session behavior is still not verified, so the overall live-persistence verdict remains **NOT VERIFIED**.
+A dedicated Intellectro Supabase project exists and has passed live schema admission, the original multi-user RLS/atomicity matrix, the governed-alpha candidate's targeted social-safety/governed-action/provenance/correction probes, and PR #16's connection/profile/block relationship matrix. The project remains clean of disposable verification data. End-to-end browser authentication/session behavior is still not verified, so the overall live-persistence verdict remains **NOT VERIFIED**.
 
 Current non-secret evidence is recorded in `docs/evidence/supabase-live-verification-2026-09-11.md`.
 
@@ -21,7 +21,8 @@ Current non-secret evidence is recorded in `docs/evidence/supabase-live-verifica
   4. `20260911050000_social_safety_hardening.sql`
   5. `20260911052000_governed_action_lifecycle.sql`
   6. `20260911054000_provenance_receipt_boundary.sql`
-  7. `20260911056000_correction_appeal.sql`.
+  7. `20260911056000_correction_appeal.sql`
+  8. `20260911060000_connection_relationships.sql`.
 
 ## Gate A — Schema / capability admission
 
@@ -29,15 +30,16 @@ Current non-secret evidence is recorded in `docs/evidence/supabase-live-verifica
 
 Verified live:
 
-1. All expected runtime tables exist and RLS is enabled where required.
-2. `agent_actions`, `approval_records`, `provenance_records`, and `correction_requests` have no ordinary browser write policy that bypasses their governed RPC boundary.
-3. Reaction/report inserts require Space membership.
-4. Governed request/decision, provenance, and correction RPCs are executable by `authenticated` but not by `anon`.
-5. Each exposed `SECURITY DEFINER` boundary derives actor identity from `auth.uid()` and performs the relevant membership/owner/moderator check internally.
-6. Supabase security advisors show no unintended anonymous execution finding.
-7. Performance-advisor findings are tracked separately as optimization debt rather than security-completion evidence.
+1. All expected runtime tables exist and RLS is enabled where required, including `connection_requests`.
+2. `agent_actions`, `approval_records`, `provenance_records`, `correction_requests`, and `connection_requests` have no ordinary-browser mutation policy that bypasses their governed/RPC boundary; `connection_requests` exposes participant SELECT only.
+3. The former direct authenticated INSERT policy on `blocks` is removed; blocking routes through `block_user(...)` so relationship severance and block creation are atomic.
+4. Reaction/report inserts require Space membership.
+5. Governed request/decision, provenance, correction, relationship, block, and relationship-visibility helper RPCs are executable by `authenticated` but not by `anon`.
+6. The relationship RPCs derive actor identity from `auth.uid()` and re-check volatile block state where required.
+7. Supabase security advisors show no unintended anonymous execution finding.
+8. Performance-advisor findings are tracked separately as optimization debt rather than security-completion evidence.
 
-The security advisor currently reports six intentional `authenticated_security_definer_function_executable` warnings. They correspond to narrow authenticated RPC boundaries whose live authorization behavior was independently exercised; they are not being treated as proof of safety merely because they exist.
+The security advisor currently reports 11 `authenticated_security_definer_function_executable` warnings across the intentionally exposed narrow RPC surface. This includes the relationship functions plus the previously admitted Space/governed-action/provenance/correction functions. The warning is retained as an explicit review surface rather than suppressed; targeted ACL and authorization behavior were exercised independently. Reference: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
 
 ## Gate B — Authentication/session boundary
 
@@ -60,7 +62,7 @@ Vercel production and Supabase Auth control-plane prerequisites are tracked in G
 
 **PASS at the live database/RLS boundary.**
 
-The original admission used User A, User B, Moderator M, and non-member O synthetic identities. The completion-candidate admission repeated targeted authority checks with synthetic UUID-only identities and no personal credentials.
+The original admission used User A, User B, Moderator M, and non-member O synthetic identities. The completion-candidate and relationship admissions used synthetic UUID-only identities with no personal credentials. PR #16's relationship matrix used three users inside a transaction that was rolled back after verification.
 
 Current admitted checks include:
 
@@ -82,6 +84,18 @@ Current admitted checks include:
 | Ordinary member resolves correction | deny | PASS |
 | Moderator resolves correction in own Space | allow | PASS |
 | Same correction resolved twice | deny replay | PASS |
+| Authenticated direct INSERT into `connection_requests` | deny through RLS/no mutation policy | PASS |
+| Request connection through bounded RPC | allow for unblocked distinct users | PASS |
+| Nonparticipant reads pending relationship | deny | PASS |
+| Recipient reads and accepts pending relationship | allow | PASS |
+| Bilateral block profile discovery | hide in both directions | PASS |
+| Bilateral block relationship-row visibility | hide in both directions | PASS |
+| Block accepted relationship | terminal `blocked`; preserve `decided_at`; set `ended_at` | PASS |
+| Unblock previously blocked pair | do not resurrect old relationship | PASS |
+| Reconnect after unblock | allow new lifecycle | PASS |
+| Disconnect accepted relationship | terminal `disconnected`; preserve decision history; set `ended_at` | PASS |
+| Accept stale request after intervening block | deny without mutating pending row | PASS |
+| Anonymous relationship RPC execution | deny | PASS |
 
 The previously admitted baseline also covers profile ownership, atomic Space creation, membership-gated posting/discussion, source-link ownership, browser denial for direct `agent_actions`/`provenance_records`, and database atomicity cases.
 
@@ -96,6 +110,10 @@ The previously admitted baseline also covers profile ownership, atomic Space cre
 - Cross-Space moderator action is rejected.
 - Provenance requires an approved action plus owner/moderator authority and same-Space post binding.
 - Correction/appeal requests preserve the original target and only open requests may be resolved by the target Space's moderator.
+- Relationship acceptance re-checks block state, so an intervening block defeats stale acceptance.
+- Blocking an active/pending relationship is atomic with block creation and records relationship termination without rewriting prior acceptance time.
+- Unblocking does not reactivate a terminal `blocked` relationship.
+- Disconnect records termination independently from the original acceptance decision.
 - Application-level denial handling remains part of Gate B/runtime verification.
 
 ## Gate E — Evidence capture
@@ -105,18 +123,18 @@ The previously admitted baseline also covers profile ownership, atomic Space cre
 Recorded non-secret evidence includes:
 
 - project reference;
-- applied migration ledger;
+- applied migration ledger, now including platform ledger entry `20260911092212 connection_relationships` for repository migration `20260911060000_connection_relationships.sql`;
+- accepted source main SHA `26586406e33c00b77f76aad4cf72b7ec811069c6` and post-merge CI `34583715560`;
 - schema/RLS/ACL inspection;
-- security/performance advisor results;
-- positive/negative synthetic authority probes;
-- repository candidate SHA and CI run;
-- cleanup verification;
+- security advisor results;
+- positive/negative synthetic authority and relationship probes;
+- cleanup verification showing zero synthetic relationship-probe auth users, profiles, blocks, and connection rows;
 - overall fail-closed verdict.
 
 Current evidence: `docs/evidence/supabase-live-verification-2026-09-11.md`.
 
 ## Fail-closed rule
 
-Intellectro may describe the repository persistence boundary as **implemented** and the current live database/RLS layer as **database-verified**. Overall live Supabase persistence remains **NOT VERIFIED** until browser Gate B passes against a configured production runtime.
+Intellectro may describe the repository persistence boundary as **implemented** and the current live database/RLS layer, including the admitted human relationship/block boundary, as **database-verified**. Overall live Supabase persistence remains **NOT VERIFIED** until browser Gate B passes against a configured production runtime.
 
-No real user pilot authorization, autonomous agent authority, production-readiness claim, Product-loop PASS, or Evaluation PASS follows from database verification alone.
+Human connection state does not grant agent capability, Space role, or governance authority. No real user pilot authorization, autonomous agent authority, production-readiness claim, Product-loop PASS, or Evaluation PASS follows from database verification alone.
