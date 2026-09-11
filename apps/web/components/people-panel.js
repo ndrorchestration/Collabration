@@ -6,6 +6,21 @@ function personLabel(person, fallbackId) {
   return person?.display_name ?? person?.handle ?? fallbackId.slice(0, 8);
 }
 
+function SafetyActions({ targetUserId, muteMember, blockMember }) {
+  return (
+    <div className="row-actions person-safety-actions" aria-label="Safety actions">
+      <form action={muteMember}>
+        <input type="hidden" name="target_user_id" value={targetUserId} />
+        <button type="submit" className="secondary-button">Mute</button>
+      </form>
+      <form action={blockMember}>
+        <input type="hidden" name="target_user_id" value={targetUserId} />
+        <button type="submit" className="danger-button">Block</button>
+      </form>
+    </div>
+  );
+}
+
 export function PeoplePanel({
   acceptedConnections = [],
   incomingConnectionRequests = [],
@@ -15,7 +30,9 @@ export function PeoplePanel({
   userId,
   requestConnection,
   decideConnectionRequest,
-  disconnectConnection
+  disconnectConnection,
+  muteMember,
+  blockMember
 }) {
   const empty = acceptedConnections.length === 0
     && incomingConnectionRequests.length === 0
@@ -39,11 +56,14 @@ export function PeoplePanel({
               const person = peopleMap[counterpartId];
               return (
                 <div className="person-row" key={connection.id}>
-                  <div><strong>{personLabel(person, counterpartId)}</strong>{person?.handle && <span className="muted"> · @{person.handle}</span>}</div>
-                  <form action={disconnectConnection}>
-                    <input type="hidden" name="request_id" value={connection.id} />
-                    <button type="submit" className="secondary-button">Disconnect</button>
-                  </form>
+                  <div className="person-identity"><strong>{personLabel(person, counterpartId)}</strong>{person?.handle && <span className="muted"> · @{person.handle}</span>}</div>
+                  <div className="person-actions">
+                    <form action={disconnectConnection}>
+                      <input type="hidden" name="request_id" value={connection.id} />
+                      <button type="submit" className="secondary-button">Disconnect</button>
+                    </form>
+                    <SafetyActions targetUserId={counterpartId} muteMember={muteMember} blockMember={blockMember} />
+                  </div>
                 </div>
               );
             })}
@@ -59,18 +79,21 @@ export function PeoplePanel({
               const person = peopleMap[connection.requester_id];
               return (
                 <div className="person-row" key={connection.id}>
-                  <div><strong>{personLabel(person, connection.requester_id)}</strong>{person?.handle && <span className="muted"> · @{person.handle}</span>}</div>
-                  <div className="row-actions">
-                    <form action={decideConnectionRequest}>
-                      <input type="hidden" name="request_id" value={connection.id} />
-                      <input type="hidden" name="decision" value="accepted" />
-                      <button type="submit" className="primary-button">Accept</button>
-                    </form>
-                    <form action={decideConnectionRequest}>
-                      <input type="hidden" name="request_id" value={connection.id} />
-                      <input type="hidden" name="decision" value="declined" />
-                      <button type="submit" className="secondary-button">Decline</button>
-                    </form>
+                  <div className="person-identity"><strong>{personLabel(person, connection.requester_id)}</strong>{person?.handle && <span className="muted"> · @{person.handle}</span>}</div>
+                  <div className="person-actions">
+                    <div className="row-actions">
+                      <form action={decideConnectionRequest}>
+                        <input type="hidden" name="request_id" value={connection.id} />
+                        <input type="hidden" name="decision" value="accepted" />
+                        <button type="submit" className="primary-button">Accept</button>
+                      </form>
+                      <form action={decideConnectionRequest}>
+                        <input type="hidden" name="request_id" value={connection.id} />
+                        <input type="hidden" name="decision" value="declined" />
+                        <button type="submit" className="secondary-button">Decline</button>
+                      </form>
+                    </div>
+                    <SafetyActions targetUserId={connection.requester_id} muteMember={muteMember} blockMember={blockMember} />
                   </div>
                 </div>
               );
@@ -87,12 +110,15 @@ export function PeoplePanel({
               const person = peopleMap[connection.recipient_id];
               return (
                 <div className="person-row" key={connection.id}>
-                  <div><strong>{personLabel(person, connection.recipient_id)}</strong>{person?.handle && <span className="muted"> · @{person.handle}</span>}</div>
-                  <form action={decideConnectionRequest}>
-                    <input type="hidden" name="request_id" value={connection.id} />
-                    <input type="hidden" name="decision" value="cancelled" />
-                    <button type="submit" className="secondary-button">Cancel request</button>
-                  </form>
+                  <div className="person-identity"><strong>{personLabel(person, connection.recipient_id)}</strong>{person?.handle && <span className="muted"> · @{person.handle}</span>}</div>
+                  <div className="person-actions">
+                    <form action={decideConnectionRequest}>
+                      <input type="hidden" name="request_id" value={connection.id} />
+                      <input type="hidden" name="decision" value="cancelled" />
+                      <button type="submit" className="secondary-button">Cancel request</button>
+                    </form>
+                    <SafetyActions targetUserId={connection.recipient_id} muteMember={muteMember} blockMember={blockMember} />
+                  </div>
                 </div>
               );
             })}
@@ -105,11 +131,16 @@ export function PeoplePanel({
           <h2 id="discover-heading">Discover people</h2>
           <div className="people-list">
             {discoverablePeople.map((person) => (
-              <form action={requestConnection} className="person-row" key={person.id}>
-                <input type="hidden" name="target_user_id" value={person.id} />
-                <div><strong>{person.display_name || person.handle}</strong>{person.handle && <span className="muted"> · @{person.handle}</span>}</div>
-                <button type="submit" className="secondary-button">Connect</button>
-              </form>
+              <div className="person-row" key={person.id}>
+                <div className="person-identity"><strong>{person.display_name || person.handle}</strong>{person.handle && <span className="muted"> · @{person.handle}</span>}</div>
+                <div className="person-actions">
+                  <form action={requestConnection}>
+                    <input type="hidden" name="target_user_id" value={person.id} />
+                    <button type="submit" className="secondary-button">Connect</button>
+                  </form>
+                  <SafetyActions targetUserId={person.id} muteMember={muteMember} blockMember={blockMember} />
+                </div>
+              </div>
             ))}
           </div>
         </section>
