@@ -87,6 +87,18 @@ Intellectro aims to be:
 9. Provenance establishes origin and transformation history; it does not by itself establish truth.
 10. Governance should appear when trust matters, not burden ordinary human expression.
 
+## Governance evolution direction
+
+Intellectro will continue strengthening these controls through **pattern transfer without authority transfer**. Governance lessons from DGAF and other NDR projects may inform Intellectro, but they do not transfer authorization, evidence, scientific results, or verification state.
+
+For consequential AI activity, the target path is:
+
+`request → typed capability → policy decision → approval/verifier when required → execution → durable receipt → challenge/correction`
+
+Before broader autonomous authority is released, Intellectro should independently establish versioned policy, adversarial tests, provenance/decision receipt behavior, rollback or revocation behavior, runtime evidence, and an explicit release decision. Higher-impact actions should prefer separation between the component proposing an action and the authority validating it when practical.
+
+See [`ADR 0004 — Pattern transfer without authority transfer`](docs/adr/0004-pattern-transfer-without-authority-transfer.md).
+
 ## Core loop
 
 `post → inspect → discuss → coordinate → produce outcome`
@@ -116,7 +128,7 @@ docs/                   product, architecture, evaluation, threat models, verifi
 ## Documentation map
 
 - [`docs/product-thesis.md`](docs/product-thesis.md) — canonical positioning, user problem, differentiation, and anti-goals
-- [`docs/architecture.md`](docs/architecture.md) — layers, graphs, boundaries, and data responsibilities
+- [`docs/architecture.md`](docs/architecture.md) — layers, graphs, boundaries, capability-release progression, and data responsibilities
 - [`docs/governance-kernel.md`](docs/governance-kernel.md) — principals, capabilities, controls, invariants, audit events, and rate limits
 - [`docs/governance-ux.md`](docs/governance-ux.md) — trust states, contextual disclosure, challenge flows, and progressive inspection
 - [`docs/agents.md`](docs/agents.md) — agent roles, permissions, prohibitions, and sequencing
@@ -129,7 +141,7 @@ docs/                   product, architecture, evaluation, threat models, verifi
 - [`docs/history/strategic-evolution.md`](docs/history/strategic-evolution.md) — why the thesis moved from agent-native to governance-native
 - [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml) — machine-readable initial policy
 - [`governance/action-event.schema.json`](governance/action-event.schema.json) — minimum audit-event shape
-- [`docs/adr/`](docs/adr/) — frozen architecture decisions
+- [`docs/adr/`](docs/adr/) — frozen architecture decisions, including the DGAF-informed pattern-transfer boundary
 
 ## Architecture principle
 
