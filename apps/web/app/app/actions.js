@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../lib/supabase/server';
 
 const RESPONSE_TYPES = new Set(['support', 'challenge', 'qualify', 'add_evidence', 'ask_question']);
+const SUPPORTED_REACTIONS = new Set(['like', 'useful', 'interesting']);
+const SUPPORTED_REPORT_REASONS = new Set(['spam', 'harassment', 'misleading', 'other']);
 
 function requiredText(formData, key, maxLength) {
   const value = String(formData.get(key) ?? '').trim();
@@ -140,6 +142,91 @@ export async function createClaimResponse(formData) {
     response_type: responseType,
     body
   });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function setReaction(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const postId = requiredId(formData, 'post_id');
+  const reaction = requiredText(formData, 'reaction', 20);
+  if (!SUPPORTED_REACTIONS.has(reaction)) throw new Error('Unsupported reaction');
+
+  const { error } = await supabase.from('reactions').upsert(
+    { post_id: postId, user_id: claims.sub, reaction },
+    { onConflict: 'post_id,user_id,reaction', ignoreDuplicates: true }
+  );
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function removeReaction(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const postId = requiredId(formData, 'post_id');
+  const reaction = requiredText(formData, 'reaction', 20);
+  if (!SUPPORTED_REACTIONS.has(reaction)) throw new Error('Unsupported reaction');
+
+  const { error } = await supabase
+    .from('reactions')
+    .delete()
+    .eq('post_id', postId)
+    .eq('user_id', claims.sub)
+    .eq('reaction', reaction);
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function reportPost(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const postId = requiredId(formData, 'post_id');
+  const reason = requiredText(formData, 'reason', 40);
+  if (!SUPPORTED_REPORT_REASONS.has(reason)) throw new Error('Unsupported report reason');
+
+  const { error } = await supabase.from('reports').insert({ reporter_id: claims.sub, post_id: postId, reason });
+  if (error) throw error;
+  refreshApp();
+}
+
+function assertDifferentUser(actorId, targetId) {
+  if (actorId === targetId) throw new Error('Cannot target your own account');
+}
+
+export async function blockMember(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const targetId = requiredId(formData, 'target_user_id');
+  assertDifferentUser(claims.sub, targetId);
+  const { error } = await supabase.from('blocks').upsert(
+    { blocker_id: claims.sub, blocked_id: targetId },
+    { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
+  );
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function unblockMember(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const targetId = requiredId(formData, 'target_user_id');
+  const { error } = await supabase.from('blocks').delete().eq('blocker_id', claims.sub).eq('blocked_id', targetId);
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function muteMember(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const targetId = requiredId(formData, 'target_user_id');
+  assertDifferentUser(claims.sub, targetId);
+  const { error } = await supabase.from('mutes').upsert(
+    { muter_id: claims.sub, muted_id: targetId },
+    { onConflict: 'muter_id,muted_id', ignoreDuplicates: true }
+  );
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function unmuteMember(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const targetId = requiredId(formData, 'target_user_id');
+  const { error } = await supabase.from('mutes').delete().eq('muter_id', claims.sub).eq('muted_id', targetId);
   if (error) throw error;
   refreshApp();
 }
