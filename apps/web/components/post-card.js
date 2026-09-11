@@ -6,6 +6,7 @@ import { CommentThread } from './comment-thread';
 import { ClaimResponseComposer } from './claim-response-composer';
 import { SourceLinker } from './source-linker';
 import { TrustSignals, assistanceLabel } from './trust-signals';
+import { ContextDrawer } from './context-drawer';
 
 export function PostCard({
   post,
@@ -35,9 +36,8 @@ export function PostCard({
       </header>
       <p className="post-copy">{post.text}</p>
       <TrustSignals trust={trust} pendingAgentOutput={pendingAgentOutput} />
-      <details className="context-panel">
-        <summary>View context</summary>
-        <dl>
+      <ContextDrawer label="View context">
+        <dl className="context-detail-list">
           <div><dt>Created by</dt><dd>{author.displayName} ({author.handle})</dd></div>
           <div><dt>AI role</dt><dd>{trust.aiAssisted ? assistanceLabel(trust.aiAssistanceType) : 'None'}</dd></div>
           <div><dt>Human approval</dt><dd>{trust.humanApproved === null ? 'Not applicable' : trust.humanApproved ? 'Confirmed' : 'Required before publication/use'}</dd></div>
@@ -46,7 +46,7 @@ export function PostCard({
         </dl>
         <p className="context-note">Provenance describes origin and transformation. It does not certify that a claim is true.</p>
         {onInspectActionLog && <button type="button" className="link-button" onClick={() => onInspectActionLog(post)}>Inspect action log</button>}
-      </details>
+      </ContextDrawer>
 
       {interactive && reactionState && <ReactionBar counts={reactionState.counts} activeReactions={reactionState.active} onToggle={onToggleReaction} />}
       {interactive && <ContextResponseBar />}
