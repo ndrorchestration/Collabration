@@ -208,10 +208,7 @@ export async function blockMember(formData) {
   const { supabase, claims } = await authenticatedClient();
   const targetId = requiredId(formData, 'target_user_id');
   assertDifferentUser(claims.sub, targetId);
-  const { error } = await supabase.from('blocks').upsert(
-    { blocker_id: claims.sub, blocked_id: targetId },
-    { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
-  );
+  const { error } = await supabase.rpc('block_user', { p_blocked_id: targetId });
   if (error) throw error;
   refreshApp();
 }
