@@ -74,7 +74,7 @@ test('profile discovery is reciprocally block-aware at the database boundary', (
 test('blocking is atomic with active-relationship severance and cannot be bypassed by direct insert', () => {
   const migration = read(migrationPath);
   const actions = read('apps/web/app/app/actions.js');
-  assert.match(migration, /status in \('pending', 'accepted', 'declined', 'cancelled', 'blocked'\)/i);
+  assert.match(migration, /status in \('pending', 'accepted', 'declined', 'cancelled', 'blocked'/i);
   assert.match(migration, /create or replace function public\.block_user\(p_blocked_id uuid\)/i);
   assert.match(migration, /insert into public\.blocks.*v_blocker_id.*p_blocked_id/s);
   assert.match(migration, /update public\.connection_requests.*status = 'blocked'.*status in \('pending', 'accepted'\)/s);
@@ -88,4 +88,26 @@ test('blocking is atomic with active-relationship severance and cannot be bypass
 test('blocked pairs cannot inspect connection rows while block is active', () => {
   const migration = read(migrationPath);
   assert.match(migration, /create policy "connection participants read"[\s\S]*is_blocked_with_current_user/i);
+});
+
+test('disconnect preserves acceptance time and records a separate relationship end time', () => {
+  const migration = read(migrationPath);
+  const actions = read('apps/web/app/app/actions.js');
+  assert.match(migration, /status in \('pending', 'accepted', 'declined', 'cancelled', 'blocked', 'disconnected'\)/i);
+  assert.match(migration, /ended_at timestamptz/i);
+  assert.match(migration, /create or replace function public\.disconnect_connection\(p_request_id uuid\)/i);
+  assert.match(migration, /v_status <> 'accepted'/i);
+  assert.match(migration, /v_actor_id.*v_requester_id.*v_recipient_id/s);
+  assert.match(migration, /set status = 'disconnected',[\s\S]*ended_at = now\(\)/i);
+  assert.match(migration, /revoke all on function public\.disconnect_connection\(uuid\) from public, anon/i);
+  assert.match(migration, /grant execute on function public\.disconnect_connection\(uuid\) to authenticated/i);
+  assert.match(actions, /export async function disconnectConnection\(/);
+  assert.match(actions, /\.rpc\('disconnect_connection'/);
+});
+
+test('blocking records relationship end time instead of overwriting acceptance decision time', () => {
+  const migration = read(migrationPath);
+  assert.match(migration, /set status = 'blocked',[\s\S]*ended_at = now\(\)/i);
+  const blockSection = migration.match(/create or replace function public\.block_user[\s\S]*?\$\$;/i)?.[0] ?? '';
+  assert.doesNotMatch(blockSection, /decided_at = now\(\)/i);
 });
