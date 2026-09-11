@@ -45,3 +45,16 @@ test('content passport requires at least one exact source revision', () => {
     /source revision/i
   );
 });
+
+test('content passport requires an exact subject id and revision id', () => {
+  assert.throws(
+    () => provenance.createContentPassport({
+      subject: { id: 'post-123' },
+      sourceRevisions: [{ sourceId: 'source-a', revisionId: 'source-a@r4' }],
+      transformations: [],
+      responsibleActors: [{ actorId: 'user-ender', actorType: 'human' }],
+      generatedAt: '2026-09-11T08:20:00.000Z'
+    }),
+    /subject revision/i
+  );
+});
