@@ -31,11 +31,16 @@ test('resolution is moderator-scoped to the target Space and cannot rewrite orig
 test('application exposes correction and appeal submission plus moderator resolution paths', () => {
   const actions = read('apps/web/app/app/actions.js');
   const page = read('apps/web/app/app/page.js');
+  const post = read('apps/web/components/persisted-post-card.js');
+  const review = read('apps/web/components/review-panel.js');
   assert.match(actions, /requestCorrectionOrAppeal/);
   assert.match(actions, /request_correction_or_appeal/);
   assert.match(actions, /resolveCorrectionOrAppeal/);
   assert.match(actions, /resolve_correction_or_appeal/);
-  assert.match(page, /Request correction or appeal/);
-  assert.match(page, /Correction and appeal queue/);
-  assert.match(page, /Original records remain unchanged/);
+  assert.match(post, /Correction or appeal/);
+  assert.match(post, /original post will remain unchanged/i);
+  assert.match(review, /Corrections and appeals/);
+  assert.match(review, /resolveCorrectionOrAppeal/);
+  assert.match(page, /requestCorrectionOrAppeal/);
+  assert.match(page, /resolveCorrectionOrAppeal/);
 });

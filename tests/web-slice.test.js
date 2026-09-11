@@ -12,17 +12,19 @@ test('social shell states chronological ranking and demo persistence boundaries'
   assert.match(page, /never represents an authenticated session/i);
 });
 
-test('post UI exposes typed trust context and provenance-not-truth disclosure', async () => {
+test('post UI exposes exceptional typed trust context and provenance-not-truth disclosure', async () => {
   const card = await read('apps/web/components/post-card.js');
-  assert.match(card, /Human-authored/);
-  assert.match(card, /Source-linked/);
-  assert.match(card, /AI summarized/);
-  assert.match(card, /AI extracted claims/);
-  assert.match(card, /Human approved/);
-  assert.match(card, /Awaiting approval/);
+  const signals = await read('apps/web/components/trust-signals.js');
+  assert.doesNotMatch(card, />Human-authored</);
+  assert.match(signals, /Source-linked/);
+  assert.match(signals, /AI summarized/);
+  assert.match(signals, /AI extracted claims/);
+  assert.match(signals, /Human approved/);
+  assert.match(signals, /Awaiting approval/);
   assert.match(card, /View context/);
   assert.match(card, /does not certify that a claim is true/i);
   assert.doesNotMatch(card, /AI enhanced/i);
+  assert.doesNotMatch(signals, /AI enhanced/i);
 });
 
 test('claim response controls use contextual actions rather than truth voting', async () => {

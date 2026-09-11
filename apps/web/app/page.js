@@ -1,20 +1,9 @@
 import Link from 'next/link';
 import { DemoGovernanceRail } from '../components/demo-governance-rail';
 import { DemoSocialFeed } from '../components/demo-social-feed';
-import { CommunityStatePanel } from '../components/community-state-panel';
 import { PostCard } from '../components/post-card';
 import { demoAuthors, demoFeed, demoSpace } from '../lib/demo-data';
 import { resolveRuntimeMode } from '../lib/runtime-mode';
-
-const configuredPreviewMetrics = Object.freeze({
-  challenges: demoFeed.reduce((sum, post) => sum + (post.disputeSummary?.challenges ?? 0), 0),
-  qualifications: demoFeed.reduce((sum, post) => sum + (post.disputeSummary?.qualifications ?? 0), 0),
-  unresolvedQuestions: demoFeed.reduce((sum, post) => sum + (post.disputeSummary?.unresolvedQuestions ?? 0), 0),
-  awaitingApproval: demoFeed.filter((post) => post.kind === 'ai_assisted' && post.aiAssistance?.humanApproved === false).length,
-  sourceLinkedPosts: demoFeed.filter((post) => post.kind === 'source_linked' && post.sourceIds.length > 0).length,
-  humanPosts: demoFeed.filter((post) => post.kind === 'human').length,
-  claimResponses: 0
-});
 
 export default function HomePage() {
   const runtime = resolveRuntimeMode(process.env);
@@ -39,15 +28,14 @@ export default function HomePage() {
     <main className="app-shell">
       <header className="topbar">
         <div className="brand-mark">Intellectro</div>
-        <div className="topbar-search">Search people, Spaces, sources, and projects</div>
+        <div className="topbar-context">Accountable collaboration preview</div>
         <Link href={configured ? '/login' : '/'} className="account-button">{configured ? 'Sign in' : 'Demo mode'}</Link>
       </header>
       <aside className="left-rail">
         <p className="rail-heading">Spaces</p>
-        <button className="space-link space-link--active"><span className="space-icon">AG</span><span><strong>{demoSpace.name}</strong><small>{demoSpace.memberCount} members</small></span></button>
+        <button className="space-link space-link--active" type="button"><span className="space-icon">AG</span><span><strong>{demoSpace.name}</strong><small>{demoSpace.memberCount} members</small></span></button>
         <div className="rail-divider" />
-        <p className="rail-heading">Alpha boundaries</p>
-        <ul className="boundary-list"><li>Chronological feed</li><li>Human approval for agent output</li><li>Deny-by-default capabilities</li><li>No autonomous public posting</li></ul>
+        <p className="context-note">{configured ? 'Preview content only. Sign in for authenticated governed actions.' : 'Illustrative local demo state. Nothing here represents authenticated authority.'}</p>
       </aside>
       <section className="feed-column">
         <section className="space-hero">
@@ -67,13 +55,11 @@ export default function HomePage() {
       </section>
       <aside className="right-rail">
         {configured ? (
-          <>
-            <CommunityStatePanel metrics={configuredPreviewMetrics} />
-            <section className="side-card">
-              <p className="eyebrow">How to read Intellectro</p>
-              <ol className="read-list"><li>Read normally.</li><li>Notice lightweight context chips.</li><li>Open context when trust matters.</li><li>Sign in for authenticated governed actions.</li></ol>
-            </section>
-          </>
+          <section className="side-card">
+            <p className="eyebrow">Trust context</p>
+            <h2>Social content first. Accountability when it matters.</h2>
+            <p className="context-note">AI participation, source linkage, approval state, and disagreement remain inspectable without turning the feed into a governance dashboard.</p>
+          </section>
         ) : <DemoGovernanceRail />}
       </aside>
     </main>

@@ -1,6 +1,15 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ALPHA_CAPABILITY_MATRIX, buildPermissionInspection } from '../../../../packages/governance/src/index.js';
+import { AccountPanel } from '../../components/account-panel';
+import { AppShell } from '../../components/app-shell';
+import { MobileNav } from '../../components/mobile-nav';
+import { PeoplePanel } from '../../components/people-panel';
+import { PersistedPostCard } from '../../components/persisted-post-card';
+import { PrimaryNav } from '../../components/primary-nav';
+import { ReviewPanel } from '../../components/review-panel';
+import { SpaceHeader } from '../../components/space-header';
+import { SpacesPanel } from '../../components/spaces-panel';
 import { getSupabasePublicConfig } from '../../lib/supabase/env';
 import { createClient } from '../../lib/supabase/server';
 import {
@@ -28,6 +37,8 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const APP_VIEWS = new Set(['home', 'spaces', 'people', 'review', 'account']);
+
 const permissionInspections = [
   buildPermissionInspection(ALPHA_CAPABILITY_MATRIX, 'community_agent'),
   buildPermissionInspection(ALPHA_CAPABILITY_MATRIX, 'claim_agent')
@@ -35,10 +46,6 @@ const permissionInspections = [
 
 function byId(rows = []) {
   return Object.fromEntries(rows.map((row) => [row.id, row]));
-}
-
-function formatDate(value) {
-  return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
 function filterVisibleDiscussion(rows, excludedAuthorIds) {
@@ -53,10 +60,6 @@ function filterVisibleDiscussion(rows, excludedAuthorIds) {
 
 function correctionTargetSpaceId(request) {
   return request.posts?.space_id ?? request.agent_actions?.space_id ?? null;
-}
-
-function connectionCounterpartId(connection, userId) {
-  return connection.requester_id === userId ? connection.recipient_id : connection.requester_id;
 }
 
 export default async function PersistedAppPage({ searchParams }) {
@@ -81,6 +84,9 @@ export default async function PersistedAppPage({ searchParams }) {
 
   const userId = claims.sub;
   const params = await searchParams;
+  const requestedView = typeof params?.view === 'string' ? params.view : 'home';
+  const normalizedView = APP_VIEWS.has(requestedView) ? requestedView : 'home';
+
   const [
     { data: profile },
     { data: memberships = [] },
@@ -179,6 +185,9 @@ export default async function PersistedAppPage({ searchParams }) {
   }
 
   const openCorrections = correctionRequests.filter((request) => request.status === 'open');
+  const canReview = canModerate && (pendingActions.length > 0 || openCorrections.length > 0 || agentActions.length > 0 || correctionRequests.length > 0);
+  const activeView = normalizedView === 'review' && !canReview ? 'home' : normalizedView;
+
   let safetyProfileMap = {};
   const safetyIds = [...excludedAuthorIds];
   if (safetyIds.length) {
@@ -186,163 +195,137 @@ export default async function PersistedAppPage({ searchParams }) {
     safetyProfileMap = byId(safetyProfiles);
   }
 
-  return (
-    <main className="app-shell">
-      <header className="topbar">
-        <Link href="/" className="brand-mark">Intellectro</Link>
-        <div className="topbar-search">Persisted alpha · authenticated Supabase boundary</div>
-        <form action="/auth/signout" method="post"><button className="account-button" type="submit">Sign out</button></form>
-      </header>
+  const navigationSpaces = memberships.map((membership) => spaceMap[membership.space_id]).filter(Boolean);
 
-      <aside className="left-rail">
-        <p className="rail-heading">Your Spaces</p>
-        {memberships.map((membership) => {
-          const space = spaceMap[membership.space_id];
-          if (!space) return null;
-          return <Link key={space.id} className={`space-link ${space.id === activeSpaceId ? 'space-link--active' : ''}`} href={`/app?space=${space.id}`}><span><strong>{space.name}</strong><small>{membership.role}</small></span></Link>;
-        })}
-        {!memberships.length && <p className="context-note">Join or create a Space to start the persisted feed.</p>}
-      </aside>
+  const safetyContext = (
+    <section className="side-card">
+      <p className="eyebrow">Safety controls</p>
+      <p>Mute hides a person's activity from your feed. Block creates a bilateral privacy boundary, hides blocked profiles at the database boundary, and ends any pending or accepted connection without banning or deleting content for anyone else.</p>
+      {safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}
+      {safetyIds.map((id) => {
+        const member = safetyProfileMap[id];
+        return (
+          <div key={id} className="context-note safety-member">
+            <strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>
+            {mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}
+            {blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}
+          </div>
+        );
+      })}
+    </section>
+  );
 
-      <section className="feed-column">
-        <section className="space-hero">
-          <div><p className="eyebrow">Persisted alpha</p><h1>{activeSpace?.name ?? 'Choose a Space'}</h1><p>{activeSpace?.description ?? 'Authenticated writes are constrained by RLS and server-derived identity.'}</p></div>
-        </section>
+  const topbar = (
+    <>
+      <Link href="/app?view=home" className="brand-mark">Intellectro</Link>
+      <div className="topbar-context">{activeSpace?.name ?? 'Accountable collaboration'}</div>
+      <form action="/auth/signout" method="post"><button className="account-button" type="submit">Sign out</button></form>
+    </>
+  );
 
-        <details className="composer-card" open={!profile}>
-          <summary>{profile ? `Profile · @${profile.handle}` : 'Create your profile'}</summary>
-          <form action={upsertProfile} className="login-form">
-            <label htmlFor="handle">Handle</label><input id="handle" name="handle" defaultValue={profile?.handle ?? ''} required />
-            <label htmlFor="display_name">Display name</label><input id="display_name" name="display_name" defaultValue={profile?.display_name ?? ''} required />
-            <label htmlFor="bio">Bio</label><textarea id="bio" name="bio" defaultValue={profile?.bio ?? ''} />
-            <button type="submit">Save profile</button>
-          </form>
-        </details>
+  const primaryNav = <PrimaryNav activeView={activeView} spaces={navigationSpaces} activeSpaceId={activeSpaceId} canReview={canReview} />;
+  const mobileNav = <MobileNav activeView={activeView} canReview={canReview} />;
 
-        <details className="composer-card" open={incomingConnectionRequests.length > 0}>
-          <summary>Connections · {acceptedConnections.length} connected</summary>
-          <p className="context-note">Connections are human social relationships. They do not grant agent permissions, Space roles, or governance authority.</p>
+  let content;
+  if (activeView === 'spaces') {
+    content = <SpacesPanel memberships={memberships} spaces={spaces} spaceMap={spaceMap} availableSpaces={availableSpaces} createSpace={createSpace} joinSpace={joinSpace} />;
+  } else if (activeView === 'people') {
+    content = (
+      <PeoplePanel
+        acceptedConnections={acceptedConnections}
+        incomingConnectionRequests={incomingConnectionRequests}
+        outgoingConnectionRequests={outgoingConnectionRequests}
+        discoverablePeople={discoverablePeople}
+        peopleMap={peopleMap}
+        userId={userId}
+        requestConnection={requestConnection}
+        decideConnectionRequest={decideConnectionRequest}
+        disconnectConnection={disconnectConnection}
+        muteMember={muteMember}
+        blockMember={blockMember}
+      />
+    );
+  } else if (activeView === 'review' && canReview) {
+    content = (
+      <ReviewPanel
+        pendingActions={pendingActions}
+        openCorrections={openCorrections}
+        correctionRequests={correctionRequests}
+        agentActions={agentActions}
+        permissionInspections={permissionInspections}
+        decideAgentAction={decideAgentAction}
+        requestCorrectionOrAppeal={requestCorrectionOrAppeal}
+        resolveCorrectionOrAppeal={resolveCorrectionOrAppeal}
+      />
+    );
+  } else if (activeView === 'account') {
+    content = <AccountPanel profile={profile} upsertProfile={upsertProfile} />;
+  } else {
+    content = (
+      <section className="home-view">
+        <SpaceHeader space={activeSpace} membershipRole={activeMembership?.role ?? null} />
 
-          {acceptedConnections.length > 0 && <div>
-            <p className="eyebrow">Connected</p>
-            {acceptedConnections.map((connection) => {
-              const counterpartId = connectionCounterpartId(connection, userId);
-              const person = peopleMap[counterpartId];
-              return <div className="context-note" key={connection.id}><strong>{person?.display_name ?? person?.handle ?? counterpartId.slice(0, 8)}</strong>{person?.handle && <> · @{person.handle}</>}<form action={disconnectConnection}><input type="hidden" name="request_id" value={connection.id} /><button type="submit" className="secondary-button">Disconnect</button></form></div>;
-            })}
-          </div>}
+        {!profile && <section className="inline-notice"><p>Create your profile before participating publicly.</p><Link href="/app?view=account" className="secondary-button">Create profile</Link></section>}
 
-          {incomingConnectionRequests.length > 0 && <div>
-            <p className="eyebrow">Incoming requests</p>
-            {incomingConnectionRequests.map((connection) => {
-              const person = peopleMap[connection.requester_id];
-              return <div className="context-note" key={connection.id}><strong>{person?.display_name ?? person?.handle ?? connection.requester_id.slice(0, 8)}</strong>{person?.handle && <> · @{person.handle}</>}<div className="trust-row"><form action={decideConnectionRequest}><input type="hidden" name="request_id" value={connection.id} /><input type="hidden" name="decision" value="accepted" /><button type="submit" className="secondary-button">Accept</button></form><form action={decideConnectionRequest}><input type="hidden" name="request_id" value={connection.id} /><input type="hidden" name="decision" value="declined" /><button type="submit" className="secondary-button">Decline</button></form></div></div>;
-            })}
-          </div>}
+        {activeSpace && (
+          <section className="composer-card">
+            <form action={createPost} className="login-form">
+              <input type="hidden" name="space_id" value={activeSpace.id} />
+              <label htmlFor="post-body">Post</label><textarea id="post-body" name="body" placeholder="Share an idea, question, experience, or source…" required />
+              <label htmlFor="source-url">Source URL · optional</label><input id="source-url" type="url" name="source_url" />
+              <label htmlFor="source-title">Source title · optional</label><input id="source-title" name="source_title" />
+              <button type="submit">Publish post</button>
+            </form>
+          </section>
+        )}
 
-          {outgoingConnectionRequests.length > 0 && <div>
-            <p className="eyebrow">Sent requests</p>
-            {outgoingConnectionRequests.map((connection) => {
-              const person = peopleMap[connection.recipient_id];
-              return <div className="context-note" key={connection.id}><strong>{person?.display_name ?? person?.handle ?? connection.recipient_id.slice(0, 8)}</strong>{person?.handle && <> · @{person.handle}</>}<form action={decideConnectionRequest}><input type="hidden" name="request_id" value={connection.id} /><input type="hidden" name="decision" value="cancelled" /><button type="submit" className="secondary-button">Cancel request</button></form></div>;
-            })}
-          </div>}
-
-          {discoverablePeople.length > 0 && <div>
-            <p className="eyebrow">People</p>
-            {discoverablePeople.map((person) => <form action={requestConnection} className="login-form" key={person.id}><input type="hidden" name="target_user_id" value={person.id} /><span className="context-note"><strong>{person.display_name || person.handle}</strong>{person.handle && <> · @{person.handle}</>}</span><button type="submit" className="secondary-button">Connect</button></form>)}
-          </div>}
-
-          {acceptedConnections.length === 0 && incomingConnectionRequests.length === 0 && outgoingConnectionRequests.length === 0 && discoverablePeople.length === 0 && <p className="context-note">No discoverable people or active connection requests yet.</p>}
-        </details>
-
-        <details className="composer-card">
-          <summary>Create a governed Space</summary>
-          <form action={createSpace} className="login-form">
-            <label htmlFor="space-name">Name</label><input id="space-name" name="name" required />
-            <label htmlFor="space-slug">Slug</label><input id="space-slug" name="slug" pattern="[a-z0-9][a-z0-9-]{1,62}" required />
-            <label htmlFor="space-description">Description</label><textarea id="space-description" name="description" />
-            <button type="submit">Create Space</button>
-          </form>
-        </details>
-
-        {availableSpaces.length > 0 && <section className="composer-card"><p className="eyebrow">Available Spaces</p>{availableSpaces.map((space) => <form action={joinSpace} key={space.id}><input type="hidden" name="space_id" value={space.id} /><button type="submit" className="secondary-button">Join {space.name}</button></form>)}</section>}
-
-        {activeSpace && <section className="composer-card">
-          <form action={createPost} className="login-form">
-            <input type="hidden" name="space_id" value={activeSpace.id} />
-            <label htmlFor="post-body">Post</label><textarea id="post-body" name="body" placeholder="Share an idea, question, experience, or source…" required />
-            <label htmlFor="source-url">Source URL · optional</label><input id="source-url" type="url" name="source_url" />
-            <label htmlFor="source-title">Source title · optional</label><input id="source-title" name="source_title" />
-            <button type="submit">Publish as human-authored post</button>
-          </form>
-        </section>}
-
-        {activeSpace && <details className="composer-card">
-          <summary>Request governed agent draft</summary>
-          <p className="context-note">This creates a pending governance record only. No model executes from this request and no public content is published.</p>
-          <form action={requestAgentAction} className="login-form"><input type="hidden" name="space_id" value={activeSpace.id} /><input type="hidden" name="agent_id" value="community_agent" /><input type="hidden" name="capability" value="draft_public_content" /><button type="submit">Request Community Agent public draft review</button></form>
-          <form action={requestAgentAction} className="login-form"><input type="hidden" name="space_id" value={activeSpace.id} /><input type="hidden" name="agent_id" value="claim_agent" /><input type="hidden" name="capability" value="draft_annotation" /><button type="submit">Request Claim Agent annotation review</button></form>
-        </details>}
+        {activeSpace && (
+          <details className="composer-card">
+            <summary>Request governed agent draft</summary>
+            <p className="context-note">This creates a pending governance record only. No model executes from this request and no public content is published.</p>
+            <form action={requestAgentAction} className="login-form"><input type="hidden" name="space_id" value={activeSpace.id} /><input type="hidden" name="agent_id" value="community_agent" /><input type="hidden" name="capability" value="draft_public_content" /><button type="submit">Request Community Agent public draft review</button></form>
+            <form action={requestAgentAction} className="login-form"><input type="hidden" name="space_id" value={activeSpace.id} /><input type="hidden" name="agent_id" value="claim_agent" /><input type="hidden" name="capability" value="draft_annotation" /><button type="submit">Request Claim Agent annotation review</button></form>
+          </details>
+        )}
 
         {activeSpace && <div className="feed-label"><span>Chronological feed</span><span>No ranking model</span></div>}
+        {!activeSpace && <p className="empty-state">Join or create a Space to start the persisted feed.</p>}
 
-        {posts.map((post) => {
-          const author = authorMap[post.author_id];
-          const reactionCounts = (post.reactions ?? []).reduce((counts, row) => ({ ...counts, [row.reaction]: (counts[row.reaction] ?? 0) + 1 }), {});
-          const ownReactions = new Set((post.reactions ?? []).filter((row) => row.user_id === userId).map((row) => row.reaction));
-          return (
-            <article className="post-card" key={post.id}>
-              <div className="post-head"><div><strong>{author?.display_name ?? 'Member'}</strong><small> @{author?.handle ?? post.author_id.slice(0, 8)} · {formatDate(post.created_at)}</small></div></div>
-              <p>{post.body}</p>
-              <div className="trust-row"><span className="trust-chip">Human-authored</span>{post.kind === 'source_linked' && <span className="trust-chip">Source-linked</span>}{post.ai_assisted && <span className="trust-chip">AI-assisted</span>}</div>
-              {(post.post_sources ?? []).map((link) => link.sources && <p className="context-note" key={link.source_id}>Source: <a href={link.sources.url} target="_blank" rel="noreferrer">{link.sources.title || link.sources.url}</a></p>)}
-
-              <div className="trust-row">
-                {['like', 'useful', 'interesting'].map((reaction) => <form action={ownReactions.has(reaction) ? removeReaction : setReaction} key={reaction}><input type="hidden" name="post_id" value={post.id} /><input type="hidden" name="reaction" value={reaction} /><button type="submit" className="secondary-button">{ownReactions.has(reaction) ? 'Remove ' : ''}{reaction} · {reactionCounts[reaction] ?? 0}</button></form>)}
-              </div>
-
-              {(post.comments ?? []).map((comment) => <p className="context-note" key={comment.id}><strong>{authorMap[comment.author_id]?.display_name ?? 'Member'}:</strong> {comment.body}</p>)}
-              {(post.claim_responses ?? []).map((response) => <p className="context-note" key={response.id}><strong>{response.response_type.replace('_', ' ')} · {authorMap[response.author_id]?.display_name ?? 'Member'}:</strong> {response.body}</p>)}
-
-              <details><summary>Comment</summary><form action={createComment} className="login-form"><input type="hidden" name="post_id" value={post.id} /><textarea name="body" required /><button type="submit">Add comment</button></form></details>
-              <details><summary>Respond with context</summary><form action={createClaimResponse} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="response_type" defaultValue="challenge"><option value="support">Support</option><option value="challenge">Challenge</option><option value="qualify">Qualify</option><option value="add_evidence">Add evidence</option><option value="ask_question">Ask question</option></select><textarea name="body" required /><button type="submit">Add contextual response</button></form></details>
-              <details><summary>Report post</summary><form action={reportPost} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="reason" defaultValue="misleading"><option value="spam">Spam</option><option value="harassment">Harassment</option><option value="misleading">Misleading</option><option value="other">Other</option></select><button type="submit">Submit report</button></form></details>
-              <details><summary>Request correction or appeal</summary><form action={requestCorrectionOrAppeal} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="request_kind" defaultValue="correction"><option value="correction">Correction</option><option value="appeal">Appeal</option></select><textarea name="request_text" placeholder="Explain what should be reviewed. The original post will remain unchanged." required /><button type="submit">Record request</button></form></details>
-              {post.author_id !== userId && <div className="trust-row"><form action={muteMember}><input type="hidden" name="target_user_id" value={post.author_id} /><button type="submit" className="secondary-button">Mute author</button></form><form action={blockMember}><input type="hidden" name="target_user_id" value={post.author_id} /><button type="submit" className="secondary-button">Block author</button></form></div>}
-            </article>
-          );
-        })}
+        {posts.map((post) => (
+          <PersistedPostCard
+            key={post.id}
+            post={post}
+            authorMap={authorMap}
+            userId={userId}
+            createComment={createComment}
+            createClaimResponse={createClaimResponse}
+            reportPost={reportPost}
+            requestCorrectionOrAppeal={requestCorrectionOrAppeal}
+            setReaction={setReaction}
+            removeReaction={removeReaction}
+            muteMember={muteMember}
+            blockMember={blockMember}
+          />
+        ))}
       </section>
+    );
+  }
 
-      <aside className="right-rail">
-        <section className="side-card"><p className="eyebrow">Persistence boundary</p><h2>Identity comes from validated claims.</h2><p>Forms never choose their own author or approver identity. RLS decides whether the authenticated user may write.</p></section>
-        <section className="side-card"><p className="eyebrow">Agent authority</p><div className="metric"><strong>0</strong><span>ordinary client insert policies for agent actions</span></div><div className="metric"><strong>0</strong><span>autonomous public posting capabilities</span></div></section>
-        <details className="side-card">
-          <summary>Permission inspector</summary>
-          <p className="context-note">Permission does not mean an action occurred. Unknown capabilities default to deny.</p>
-          {permissionInspections.map((inspection) => <div key={inspection.agentType}><p><strong>{inspection.agentType.replace('_', ' ')}</strong> · policy {inspection.version}</p>{inspection.capabilities.map((item) => <p className="context-note" key={item.capability}>{item.capability.replaceAll('_', ' ')} · <strong>{item.decision}</strong></p>)}</div>)}
-        </details>
-        {canModerate && <details className="side-card" open={pendingActions.length > 0}>
-          <summary>Moderator review queue · {pendingActions.length}</summary>
-          <p className="context-note">A decision updates the governed record only. It does not execute a model or publish output.</p>
-          {pendingActions.length === 0 && <p className="context-note">No pending governed actions.</p>}
-          {pendingActions.map((action) => <form action={decideAgentAction} className="login-form" key={action.id}><input type="hidden" name="action_id" value={action.id} /><p className="context-note"><strong>{action.agent_id}</strong> · {action.capability}</p><select name="decision" defaultValue="approved"><option value="approved">Approve</option><option value="rejected">Reject</option></select><textarea name="note" placeholder="Decision note · optional" /><button type="submit">Record human decision</button></form>)}
-        </details>}
-        <details className="side-card">
-          <summary>Governed action log · {agentActions.length}</summary>
-          <p className="context-note">This view is read-only and constrained by database RLS.</p>
-          {agentActions.length === 0 && <p className="context-note">No governed agent actions are visible for this Space.</p>}
-          {agentActions.map((action) => <div className="context-note" key={action.id}><strong>{action.agent_id}</strong> · {action.capability} · {action.approval_status}<br />policy {action.policy_version} · {formatDate(action.created_at)}{(action.approval_records ?? []).map((approval) => <span key={approval.id}><br />human decision: {approval.decision}</span>)}<form action={requestCorrectionOrAppeal} className="login-form"><input type="hidden" name="action_id" value={action.id} /><input type="hidden" name="request_kind" value="appeal" /><textarea name="request_text" placeholder="Request review of this governed action. The original record remains unchanged." required /><button type="submit">Request appeal</button></form></div>)}
-        </details>
-        <details className="side-card" open={canModerate && openCorrections.length > 0}>
-          <summary>Correction and appeal queue · {openCorrections.length}</summary>
-          <p className="context-note">Original records remain unchanged. Resolution appends human review metadata to the request ledger.</p>
-          {correctionRequests.length === 0 && <p className="context-note">No correction or appeal requests are visible for this Space.</p>}
-          {correctionRequests.map((request) => <div className="context-note" key={request.id}><strong>{request.request_kind}</strong> · {request.status}<br />{request.request_text}<br />target: {request.post_id ? `post ${request.post_id.slice(0, 8)}` : `action ${request.action_id?.slice(0, 8)}`}{request.resolution_note && <><br />resolution: {request.resolution_note}</>}{canModerate && request.status === 'open' && <form action={resolveCorrectionOrAppeal} className="login-form"><input type="hidden" name="request_id" value={request.id} /><select name="status" defaultValue="accepted"><option value="accepted">Accept</option><option value="rejected">Reject</option><option value="resolved">Resolve without acceptance/rejection</option></select><textarea name="resolution_note" placeholder="Human resolution note" /><button type="submit">Resolve request</button></form>}</div>)}
-        </details>
-        <section className="side-card"><p className="eyebrow">Safety controls</p><p>Mute hides a person's activity from your feed. Block creates a bilateral privacy boundary, hides blocked profiles at the database boundary, and ends any pending or accepted connection without banning or deleting content for anyone else.</p>{safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}{safetyIds.map((id) => { const member = safetyProfileMap[id]; return <div key={id} className="context-note"><strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>{mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}{blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}</div>; })}</section>
-      </aside>
-    </main>
+  const context = activeView === 'people'
+    ? safetyContext
+    : activeView === 'home'
+      ? (
+        <>
+          <section className="side-card"><p className="eyebrow">Persistence boundary</p><h2>Identity comes from validated claims.</h2><p className="context-note">Forms never choose their own author or approver identity. RLS decides whether the authenticated user may write.</p></section>
+          <section className="side-card"><p className="eyebrow">Agent authority</p><p className="context-note">Ordinary clients cannot directly insert governed agent actions, and autonomous public posting remains unavailable.</p></section>
+          {safetyContext}
+        </>
+      )
+      : null;
+
+  return (
+    <AppShell topbar={topbar} primaryNav={primaryNav} mobileNav={mobileNav} context={context}>
+      {content}
+    </AppShell>
   );
 }
