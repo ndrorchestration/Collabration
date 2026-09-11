@@ -15,7 +15,12 @@ const reusableComponents = [
   '../apps/web/components/people-panel.js',
   '../apps/web/components/account-panel.js',
   '../apps/web/components/spaces-panel.js',
-  '../apps/web/components/review-panel.js'
+  '../apps/web/components/review-panel.js',
+  '../apps/web/components/persisted-post-card.js',
+  '../apps/web/components/app-shell.js',
+  '../apps/web/components/primary-nav.js',
+  '../apps/web/components/mobile-nav.js',
+  '../apps/web/components/space-header.js'
 ];
 
 test('reusable social components do not own demoStore directly', async () => {
