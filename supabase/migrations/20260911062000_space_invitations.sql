@@ -173,6 +173,7 @@ declare
   v_inviter_id uuid;
   v_invitee_id uuid;
   v_status text;
+  v_join_policy text;
 begin
   if v_actor_id is null then
     raise exception 'authentication required' using errcode = '42501';
@@ -195,6 +196,17 @@ begin
   end if;
   if v_actor_id <> v_invitee_id then
     raise exception 'only invitee may accept or decline' using errcode = '42501';
+  end if;
+
+  select s.join_policy into v_join_policy
+  from public.spaces s
+  where s.id = v_space_id;
+
+  if not found then
+    raise exception 'Space not found' using errcode = 'P0002';
+  end if;
+  if p_decision = 'accepted' and v_join_policy <> 'invite_only' then
+    raise exception 'Space no longer requires an invitation' using errcode = '55000';
   end if;
 
   if p_decision = 'accepted' and exists (
