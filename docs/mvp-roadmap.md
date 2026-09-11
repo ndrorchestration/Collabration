@@ -2,7 +2,7 @@
 
 ## Evidence notation
 
-A checked repository item means the implementation exists and is covered by repository verification. It does **not** imply live Supabase behavior has been verified unless explicitly stated. The current live-database state is **NOT VERIFIED** until the isolated-project gate in [`supabase-live-verification.md`](supabase-live-verification.md) passes.
+A checked repository item means the implementation exists and is covered by repository verification. Live-state claims are called out separately. The dedicated Intellectro Supabase project has passed schema admission, live multi-user database/RLS verification, and database-enforced atomicity cases. Overall production persistence remains **NOT VERIFIED** until the browser OTP/PKCE/session Gate B passes.
 
 ## Phase 0 — Repository and governance foundation
 
@@ -17,10 +17,10 @@ A checked repository item means the implementation exists and is covered by repo
 ## Phase 1 — Familiar social Space
 
 - [x] Create application shell
-- [x] Add authentication runtime wiring (validated SSR claims, PKCE callback, refresh-cookie proxy; live project verification pending)
-- [x] Add profiles (persisted server-action path implemented; live RLS verification pending)
-- [x] Add Spaces/membership (atomic owner creation + join path implemented; live RLS verification pending)
-- [x] Add posts and comments (human/source-linked post + comment persistence paths implemented; live RLS verification pending)
+- [x] Add authentication runtime wiring (validated SSR claims, PKCE callback, refresh-cookie proxy; production browser verification pending)
+- [x] Add profiles (persisted server-action path implemented; live database/RLS boundary verified)
+- [x] Add Spaces/membership (atomic owner creation + join path implemented; live database/RLS boundary verified)
+- [x] Add posts and comments (human/source-linked post + comment persistence paths implemented; live database/RLS boundary verified)
 - [x] Add chronological feed
 - [ ] Add basic reactions (schema present; authenticated UI/persistence path pending)
 - [ ] Add report, block, and mute (RLS-backed schema present; authenticated UI/persistence paths pending)
@@ -42,11 +42,12 @@ A checked repository item means the implementation exists and is covered by repo
 - [x] Claim Agent in evidence-assistant mode
 - [ ] Human approval workflow for public agent outputs (kernel + moderator/admin RLS admission policy present; review/execution path pending)
 - [ ] Moderator review queue
-- [ ] Agent action/audit persistence (schema present; trusted server writer pending)
+- [ ] Agent action/audit persistence (schema present; trusted governed writer pending)
 
 ## Phase 4 — Alpha validation
 
-- [ ] Apply migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate
+- [x] Apply migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate
+- [ ] Pass the production browser OTP/PKCE/session verification gate
 - [ ] Run Contextual Trust Comprehension study
 - [ ] Measure governance burden
 - [ ] Evaluate summary faithfulness
