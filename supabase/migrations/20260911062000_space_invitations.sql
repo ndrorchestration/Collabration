@@ -5,6 +5,10 @@ alter table public.spaces
   add column join_policy text not null default 'open'
   check (join_policy in ('open', 'invite_only'));
 
+-- `join_policy` is access-control state. Remove the legacy generic creator-wide
+-- direct UPDATE path so policy changes must pass a narrow server-side boundary.
+drop policy if exists "spaces creator update" on public.spaces;
+
 create table public.space_invitations (
   id uuid primary key default gen_random_uuid(),
   space_id uuid not null references public.spaces(id) on delete cascade,
