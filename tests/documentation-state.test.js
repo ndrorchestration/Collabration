@@ -15,7 +15,7 @@ test('README reflects admitted database state and implemented alpha-completion r
   assert.match(readme, /governed action/i);
 });
 
-test('MVP roadmap marks repository-complete alpha features done while preserving external gates', () => {
+test('MVP roadmap marks repository and relationship database evidence without promoting external gates', () => {
   const roadmap = read('docs/mvp-roadmap.md');
   assert.match(roadmap, /\[x\] Add basic reactions/);
   assert.match(roadmap, /\[x\] Add report, block, and mute/);
@@ -27,15 +27,22 @@ test('MVP roadmap marks repository-complete alpha features done while preserving
   assert.match(roadmap, /\[x\] Moderator review queue/);
   assert.match(roadmap, /\[x\] Agent action\/audit persistence/);
   assert.match(roadmap, /\[x\] Apply the pre-relationship canonical migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate/);
-  assert.match(roadmap, /\[ \] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project/);
+  assert.match(roadmap, /\[x\] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project/);
+  assert.match(roadmap, /\[x\] Live multi-user relationship\/RLS and privacy\/block-precedence probes/);
   assert.match(roadmap, /\[ \] Pass the production browser OTP\/PKCE\/session verification gate/);
   assert.match(roadmap, /\[ \] Exercise real model-backed product loop/);
 });
 
-test('live verification and alpha completion gate preserve fail-closed state', () => {
+test('live verification evidence binds relationship admission while preserving fail-closed browser state', () => {
   const live = read('docs/supabase-live-verification.md');
+  const evidence = read('docs/evidence/supabase-live-verification-2026-09-11.md');
   const completion = read('docs/alpha-completion-gates.md');
   assert.match(live, /DATABASE\/RLS COMPLETION CANDIDATE PASSED · BROWSER AUTH\/SESSION GATE PENDING/);
+  assert.match(live, /20260911060000_connection_relationships\.sql/);
+  assert.match(live, /stale.*accept/i);
+  assert.match(evidence, /26586406e33c00b77f76aad4cf72b7ec811069c6/);
+  assert.match(evidence, /20260911092212.*connection_relationships/);
+  assert.match(evidence, /probe_auth_users.*0|synthetic `auth\.users`: 0/i);
   assert.match(completion, /Database\/RLS.*PASS/is);
   assert.match(completion, /Runtime.*NOT VERIFIED/is);
   assert.match(completion, /Operations.*NOT VERIFIED/is);
