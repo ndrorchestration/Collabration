@@ -19,3 +19,25 @@ test('post detail no longer expands a permanent inline details block', () => {
   assert.match(post, /<ContextDrawer/);
   assert.match(post, /Provenance describes origin and transformation/);
 });
+
+test('mobile keeps navigation when the desktop sidebar is hidden', () => {
+  const css = read('apps/web/app/product-shell.css');
+  assert.match(css, /\.mobile-nav/);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.product-sidebar[\s\S]*display: none/);
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.mobile-nav[\s\S]*display:/);
+  assert.match(css, /min-height: 44px/);
+});
+
+test('structural palette uses neutral surfaces and semantic accents', () => {
+  const css = read('apps/web/app/product-shell.css');
+  assert.match(css, /--surface:/);
+  assert.match(css, /--ai:/);
+  assert.match(css, /--source:/);
+  assert.match(css, /--warn:/);
+  assert.match(css, /--danger:/);
+});
+
+test('root layout loads the product-shell visual layer after legacy globals', () => {
+  const layout = read('apps/web/app/layout.js');
+  assert.match(layout, /import '\.\/globals\.css';[\s\S]*import '\.\/product-shell\.css';/);
+});
