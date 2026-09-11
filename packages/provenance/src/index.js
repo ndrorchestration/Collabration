@@ -12,12 +12,22 @@ export function createProvenanceRecord({ sourceObjects, transformations = [], ge
   return Object.freeze(record);
 }
 
+export function assertContentPassport(passport) {
+  if (!passport || typeof passport !== 'object') throw new TypeError('content passport is required');
+  if (!Array.isArray(passport.sourceRevisions) || passport.sourceRevisions.length === 0) {
+    throw new Error('content passport requires at least one source revision');
+  }
+  return true;
+}
+
 export function createContentPassport({ subject, sourceRevisions, transformations = [], responsibleActors, generatedAt }) {
-  return {
+  const passport = {
     subject: { ...subject },
     sourceRevisions: [...(sourceRevisions ?? [])].map((source) => ({ ...source })),
     transformations: [...transformations],
     responsibleActors: [...(responsibleActors ?? [])].map((actor) => ({ ...actor })),
     generatedAt
   };
+  assertContentPassport(passport);
+  return passport;
 }
