@@ -6,11 +6,16 @@ create table public.connection_requests (
   id uuid primary key default gen_random_uuid(),
   requester_id uuid not null references auth.users(id) on delete cascade,
   recipient_id uuid not null references auth.users(id) on delete cascade,
-  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'cancelled', 'blocked')),
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'cancelled', 'blocked', 'disconnected')),
   created_at timestamptz not null default now(),
   decided_at timestamptz,
+  ended_at timestamptz,
   check (requester_id <> recipient_id),
-  check ((status = 'pending' and decided_at is null) or (status <> 'pending' and decided_at is not null))
+  check (
+    (status = 'pending' and decided_at is null and ended_at is null)
+    or (status in ('accepted', 'declined', 'cancelled') and decided_at is not null and ended_at is null)
+    or (status in ('blocked', 'disconnected') and ended_at is not null)
+  )
 );
 
 create unique index connection_requests_active_pair_idx
@@ -166,6 +171,49 @@ begin
 end;
 $$;
 
+create or replace function public.disconnect_connection(p_request_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor_id uuid := auth.uid();
+  v_requester_id uuid;
+  v_recipient_id uuid;
+  v_status text;
+begin
+  if v_actor_id is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+
+  select cr.requester_id, cr.recipient_id, cr.status
+    into v_requester_id, v_recipient_id, v_status
+  from public.connection_requests cr
+  where cr.id = p_request_id
+  for update;
+
+  if not found then
+    raise exception 'connection request not found' using errcode = 'P0002';
+  end if;
+  if v_status <> 'accepted' then
+    raise exception 'connection must be accepted' using errcode = '55000';
+  end if;
+  if v_actor_id <> v_requester_id and v_actor_id <> v_recipient_id then
+    raise exception 'only a connection participant may disconnect' using errcode = '42501';
+  end if;
+
+  update public.connection_requests
+  set status = 'disconnected',
+      ended_at = now()
+  where id = p_request_id and status = 'accepted';
+
+  if not found then
+    raise exception 'connection disconnect race detected' using errcode = '40001';
+  end if;
+end;
+$$;
+
 -- Blocking becomes an atomic privacy/relationship action rather than merely a
 -- presentation preference. It severs pending or accepted relationships and the
 -- terminal `blocked` state prevents an unblock from silently resurrecting them.
@@ -191,7 +239,7 @@ begin
 
   update public.connection_requests
   set status = 'blocked',
-      decided_at = now()
+      ended_at = now()
   where status in ('pending', 'accepted')
     and (
       (requester_id = v_blocker_id and recipient_id = p_blocked_id)
@@ -210,6 +258,9 @@ grant execute on function public.request_connection(uuid) to authenticated;
 
 revoke all on function public.decide_connection_request(uuid, text) from public, anon;
 grant execute on function public.decide_connection_request(uuid, text) to authenticated;
+
+revoke all on function public.disconnect_connection(uuid) from public, anon;
+grant execute on function public.disconnect_connection(uuid) to authenticated;
 
 revoke all on function public.block_user(uuid) from public, anon;
 grant execute on function public.block_user(uuid) to authenticated;
