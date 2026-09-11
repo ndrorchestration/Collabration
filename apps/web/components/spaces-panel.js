@@ -121,7 +121,7 @@ export function SpacesPanel({
                     </select>
                     <button type="submit" className="secondary-button">Update access</button>
                   </form>
-                  {invitablePeople.length > 0 && (
+                  {space.join_policy === 'invite_only' && invitablePeople.length > 0 && (
                     <form action={inviteToSpace} className="login-form">
                       <input type="hidden" name="space_id" value={space.id} />
                       <label htmlFor={`invitee-${space.id}`}>Invite person</label>
