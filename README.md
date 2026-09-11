@@ -4,6 +4,34 @@
 
 The alpha thesis is simple: users should be able to participate in a familiar social space while understanding who created content, whether AI was involved, what an agent was allowed to do, who approved public actions, what evidence supports a claim, and how the result can be challenged or corrected.
 
+## Current implementation status
+
+The repository now contains the first executable governance foundation:
+
+- deny-by-default capability decisions;
+- accountable agent ownership validation;
+- human approval gates;
+- governed rate limiting with denial audit events;
+- immutable governed action events;
+- provenance records that preserve source and transformation history without claiming truth;
+- a bounded Community Agent planning contract;
+- a bounded Claim Agent draft contract;
+- dependency-light automated tests and CI.
+
+The social application, Supabase runtime, moderation console, trust-chip UI, and model-provider integrations remain planned work.
+
+## Run locally
+
+Requirements: Node.js 20 or newer.
+
+```bash
+npm ci
+npm run check
+npm test
+```
+
+No external runtime dependency is required for the governance-kernel test suite.
+
 ## Product promise
 
 Intellectro aims to be:
@@ -49,6 +77,20 @@ Intellectro aims to be:
 MVP proving path:
 
 `Human joins Space → posts a source-linked claim → Claim Agent analyzes it → another human challenges or qualifies it → Community Agent summarizes the disagreement → moderator approves the summary → provenance and action records are preserved`
+
+## Repository layout
+
+```text
+agents/
+  claim-agent/          bounded evidence-assistant contract
+  community-agent/      bounded community-governance contract
+packages/
+  governance/           capability, approval, rate-limit, and audit primitives
+  provenance/           source/transformation provenance boundary
+governance/             machine-readable policy/schema artifacts
+docs/                   product, architecture, evaluation, and ADRs
+.github/workflows/       automated verification
+```
 
 ## Documentation map
 
