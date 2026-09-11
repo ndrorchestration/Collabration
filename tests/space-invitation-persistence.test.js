@@ -8,7 +8,7 @@ const migrationPath = 'supabase/migrations/20260911062000_space_invitations.sql'
 
 test('migration adds explicit Space join policy and removes direct self-join authority', () => {
   const sql = read(migrationPath);
-  assert.match(sql, /alter table public\.spaces add column join_policy text not null default 'open'/i);
+  assert.match(sql, /alter table public\.spaces\s+add column join_policy text not null default 'open'/i);
   assert.match(sql, /join_policy in \('open', 'invite_only'\)/i);
   assert.match(sql, /drop policy if exists "memberships self join" on public\.space_memberships/i);
   assert.match(sql, /create or replace function public\.join_open_space\(p_space_id uuid\)/i);
