@@ -32,9 +32,9 @@ It also contains the first **persisted-alpha application boundary**:
 - no ordinary client insert path for `agent_actions` or `provenance_records`;
 - explicit Demo/fail-closed behavior when Supabase public configuration is absent.
 
-**Important evidence boundary:** the repository implementation and structural policy tests are complete for this wave, but the migrations have not yet been applied to an isolated Intellectro Supabase project. Multi-user live RLS behavior is therefore **NOT VERIFIED**. The only currently connected Supabase project belongs to another system and is intentionally untouched.
+**Important evidence boundary:** the dedicated Intellectro Supabase project has the canonical migrations applied and its live schema, multi-user database/RLS boundary, function ACLs, and database-enforced atomicity cases have passed. End-to-end production browser auth/session behavior is still **NOT VERIFIED**, so overall live persistence remains **NOT VERIFIED** until Gate B passes. Production currently fails closed to Demo mode when the public Supabase runtime configuration is absent.
 
-Moderator review UI, a trusted server writer for agent action/provenance records, correction/appeal workflow, live abuse testing, and model-provider execution remain planned work.
+Moderator review UI, a trusted governed writer for agent action/provenance records, correction/appeal workflow, live abuse testing, and model-provider execution remain planned work. Model-provider execution is not required to keep the repository safe or buildable; any future provider integration must remain server-only and fail closed when unconfigured.
 
 ## Run locally
 
@@ -93,7 +93,7 @@ Intellectro aims to be:
 
 MVP proving path:
 
-`Human joins Space → posts a source-linked claim → Claim Agent analyzes it → another human challenges or qualifies it → Community Agent summarizes the disagreement → moderator approves the summary → provenance and action records are preserved`
+`Human joins Space → posts a source-linked claim → Claim Agent analyzes it → another human challenges or qualifies the claim → Community Agent summarizes the disagreement → moderator approves the summary → provenance and action records are preserved`
 
 ## Repository layout
 
@@ -122,8 +122,9 @@ docs/                   product, architecture, evaluation, threat models, verifi
 - [`docs/agents.md`](docs/agents.md) — agent roles, permissions, prohibitions, and sequencing
 - [`docs/evaluation.md`](docs/evaluation.md) — alpha evaluation plan and Contextual Trust Comprehension metric
 - [`docs/mvp-roadmap.md`](docs/mvp-roadmap.md) — phased MVP backlog and evidence state
+- [`docs/alpha-completion-gates.md`](docs/alpha-completion-gates.md) — repository/runtime/product/evaluation completion predicates
 - [`docs/threat-model-social-slice.md`](docs/threat-model-social-slice.md) — vertical-slice threats, controls, and required live evidence
-- [`docs/supabase-live-verification.md`](docs/supabase-live-verification.md) — required live database/RLS verification gate
+- [`docs/supabase-live-verification.md`](docs/supabase-live-verification.md) — live database/RLS and browser auth/session verification gates
 - [`docs/research-context.md`](docs/research-context.md) — competitive/research context with evidence-status cautions
 - [`docs/history/strategic-evolution.md`](docs/history/strategic-evolution.md) — why the thesis moved from agent-native to governance-native
 - [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml) — machine-readable initial policy
@@ -134,4 +135,4 @@ docs/                   product, architecture, evaluation, threat models, verifi
 
 > **Governance kernel first. Social Space immediately. Autonomous agency later, if earned by evidence.**
 
-GitHub is the source of truth for code, schemas, policies, migrations, tests, agent contracts, evaluation assets, and architecture decisions. Live social content and private user data belong in the runtime datastore, not in this repository.
+GitHub is the source of truth for code, schemas, policies, migrations, tests, agent contracts, evaluation assets, and architecture decisions. Vercel owns deployment/runtime facts and the dedicated Intellectro Supabase project owns live database/Auth facts. Live social content and private user data belong in the runtime datastore, not in this repository.
