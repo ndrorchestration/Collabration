@@ -206,6 +206,15 @@ begin
     raise exception 'Space invitation unavailable' using errcode = '42501';
   end if;
 
+  if p_decision = 'accepted' and exists (
+    select 1
+    from public.space_memberships sm
+    where sm.space_id = v_space_id
+      and sm.user_id = v_invitee_id
+  ) then
+    raise exception 'user is already a Space member' using errcode = '55000';
+  end if;
+
   update public.space_invitations
   set status = p_decision,
       decided_at = now()
@@ -217,8 +226,7 @@ begin
 
   if p_decision = 'accepted' then
     insert into public.space_memberships (space_id, user_id, role)
-    values (v_space_id, v_invitee_id, 'member')
-    on conflict (space_id, user_id) do nothing;
+    values (v_space_id, v_invitee_id, 'member');
   end if;
 end;
 $$;
