@@ -45,6 +45,14 @@ test('structural palette uses neutral surfaces and semantic accents', () => {
   assert.match(css, /--danger:/);
 });
 
+test('secondary product panels share deliberate hierarchy and destructive controls', () => {
+  const css = read('apps/web/app/product-shell.css');
+  for (const selector of ['.product-view', '.view-header', '.view-section', '.person-row', '.space-list__item', '.review-row', '.account-form', '.danger-button']) {
+    assert.match(css, new RegExp(selector.replace('.', '\\.')));
+  }
+  assert.match(css, /\.danger-button[\s\S]*var\(--danger\)/);
+});
+
 test('root layout loads the product-shell visual layer after legacy globals', () => {
   const layout = read('apps/web/app/layout.js');
   assert.match(layout, /import '\.\/globals\.css';[\s\S]*import '\.\/product-shell\.css';/);
