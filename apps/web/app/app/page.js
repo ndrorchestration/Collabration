@@ -241,6 +241,8 @@ export default async function PersistedAppPage({ searchParams }) {
         requestConnection={requestConnection}
         decideConnectionRequest={decideConnectionRequest}
         disconnectConnection={disconnectConnection}
+        muteMember={muteMember}
+        blockMember={blockMember}
       />
     );
   } else if (activeView === 'review' && canReview) {
