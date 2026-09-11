@@ -71,6 +71,44 @@ Policies, capability grants, denials, approvals, escalations, audits, incidents.
 
 The differentiating behavior occurs when one user action is representable across all four graphs without hiding the transitions.
 
+## Consequential-action control flow
+
+For consequential AI activity, the target control path is:
+
+`request → typed capability → policy decision → approval/verifier when required → execution → durable receipt → challenge/correction`
+
+Each transition is independently meaningful:
+
+- a capability grant does not prove that an action executed;
+- an approval does not prove the resulting output is correct;
+- execution does not establish truth or efficacy;
+- provenance establishes origin/transformation history, not truth;
+- a repository implementation does not establish live-runtime verification;
+- one project's evidence never authorizes another project.
+
+For higher-impact actions, Intellectro should prefer separation between the component proposing an action and the authority validating it. Depending on the action, that verifier may be a human moderator, a separately scoped policy evaluator, or another independently constrained component.
+
+## Capability-release progression
+
+Broader autonomous authority is earned incrementally rather than enabled as a package. A new consequential capability should not advance beyond its current state until Intellectro has its own:
+
+1. versioned capability and policy definition;
+2. explicit owner and scope;
+3. deny/approval behavior for missing or ambiguous state;
+4. adversarial tests for escalation, replay, stale approval, forged identity, and cross-Space leakage where applicable;
+5. durable decision/provenance receipt behavior;
+6. rollback or revocation behavior;
+7. runtime evidence for the environment where the capability will operate;
+8. explicit release decision.
+
+This progression is inspired by governance lessons developed elsewhere in the NDR ecosystem, including DGAF, but the implementation and evidence are strictly Intellectro-native. See [`docs/adr/0004-pattern-transfer-without-authority-transfer.md`](adr/0004-pattern-transfer-without-authority-transfer.md).
+
+## Pattern-transfer boundary
+
+Intellectro may reuse governance patterns from DGAF or other NDR projects as design inputs. It does not inherit their authorization state, verification class, scientific claims, experiment results, freeze state, custody evidence, or efficacy claims.
+
+Adoption requires an Intellectro specification, implementation, tests, runtime evidence when applicable, and product-appropriate user semantics. Matching terminology is never sufficient evidence of matching behavior.
+
 ## Repository boundaries
 
 This repository should version:
