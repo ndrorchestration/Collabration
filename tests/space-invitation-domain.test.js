@@ -4,7 +4,7 @@ import {
   createSpaceInvitation,
   transitionSpaceInvitation,
   evaluateSpaceJoin
-} from '../packages/social-core/src/index.js';
+} from '../packages/social-core/src/space-invitations.js';
 
 const createdAt = '2026-09-11T10:45:00Z';
 const decidedAt = '2026-09-11T10:46:00Z';
