@@ -47,6 +47,17 @@ export function transitionConnectionRequest(request, { actorId, decision, decide
   return Object.freeze({ ...request, status: normalizedDecision, decidedAt: decided });
 }
 
+export function disconnectAcceptedConnection(connection, { actorId, endedAt }) {
+  if (!connection || typeof connection !== 'object') throw new TypeError('connection is required');
+  if (connection.status !== 'accepted') throw new Error('connection must be accepted');
+  const actor = requireText(actorId, 'actorId');
+  const ended = requireDateTime(endedAt, 'endedAt');
+  if (actor !== connection.requesterId && actor !== connection.recipientId) {
+    throw new Error('only a connection participant may disconnect');
+  }
+  return Object.freeze({ ...connection, status: 'disconnected', endedAt: ended });
+}
+
 export function evaluateConnectionAccess({ viewerId, targetId, blocks = [] }) {
   const viewer = requireText(viewerId, 'viewerId');
   const target = requireText(targetId, 'targetId');
