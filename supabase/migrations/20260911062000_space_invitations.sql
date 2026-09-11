@@ -128,6 +128,7 @@ as $$
 declare
   v_inviter_id uuid := auth.uid();
   v_invitation_id uuid;
+  v_join_policy text;
 begin
   if v_inviter_id is null then
     raise exception 'authentication required' using errcode = '42501';
@@ -138,6 +139,18 @@ begin
   if not public.is_space_admin(p_space_id) then
     raise exception 'only Space admin may invite' using errcode = '42501';
   end if;
+
+  select s.join_policy into v_join_policy
+  from public.spaces s
+  where s.id = p_space_id;
+
+  if not found then
+    raise exception 'Space not found' using errcode = 'P0002';
+  end if;
+  if v_join_policy <> 'invite_only' then
+    raise exception 'Space does not require invitations' using errcode = '55000';
+  end if;
+
   if exists (
     select 1 from public.space_memberships sm
     where sm.space_id = p_space_id and sm.user_id = p_invitee_id
