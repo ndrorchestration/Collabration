@@ -1,12 +1,12 @@
 -- Person-to-person connection lifecycle for the collaboration alpha.
 -- Human social relationships do not grant agent authority.
--- Block state in either direction defeats new requests and acceptance.
+-- Block state in either direction defeats discovery, requests, acceptance, and active relationship visibility.
 
 create table public.connection_requests (
   id uuid primary key default gen_random_uuid(),
   requester_id uuid not null references auth.users(id) on delete cascade,
   recipient_id uuid not null references auth.users(id) on delete cascade,
-  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'cancelled')),
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'cancelled', 'blocked')),
   created_at timestamptz not null default now(),
   decided_at timestamptz,
   check (requester_id <> recipient_id),
@@ -27,10 +27,46 @@ create index connection_requests_recipient_created_idx
 
 alter table public.connection_requests enable row level security;
 
--- Participants can inspect their own relationship records, but mutation is RPC-only.
+-- Security-definer helper exposes only the current user's own bilateral block state.
+-- Callers cannot supply an arbitrary viewer identity.
+create or replace function public.is_blocked_with_current_user(p_other_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when auth.uid() is null or p_other_id is null then true
+    else exists (
+      select 1
+      from public.blocks b
+      where (b.blocker_id = auth.uid() and b.blocked_id = p_other_id)
+         or (b.blocker_id = p_other_id and b.blocked_id = auth.uid())
+    )
+  end;
+$$;
+
+revoke all on function public.is_blocked_with_current_user(uuid) from public, anon;
+grant execute on function public.is_blocked_with_current_user(uuid) to authenticated;
+
+-- Replace the original all-authenticated profile discovery policy. A user can
+-- always read their own profile; a bilateral block hides the other profile at RLS.
+drop policy if exists "profiles authenticated read" on public.profiles;
+create policy "profiles block-aware read" on public.profiles
+  for select to authenticated
+  using (
+    (select auth.uid()) = id
+    or not public.is_blocked_with_current_user(id)
+  );
+
+-- Participants can inspect relationship rows only while no bilateral block is active.
 create policy "connection participants read" on public.connection_requests
   for select to authenticated
-  using ((select auth.uid()) = requester_id or (select auth.uid()) = recipient_id);
+  using (
+    ((select auth.uid()) = requester_id and not public.is_blocked_with_current_user(recipient_id))
+    or ((select auth.uid()) = recipient_id and not public.is_blocked_with_current_user(requester_id))
+  );
 
 create or replace function public.request_connection(p_recipient_id uuid)
 returns uuid
@@ -130,8 +166,50 @@ begin
 end;
 $$;
 
+-- Blocking becomes an atomic privacy/relationship action rather than merely a
+-- presentation preference. It severs pending or accepted relationships and the
+-- terminal `blocked` state prevents an unblock from silently resurrecting them.
+create or replace function public.block_user(p_blocked_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_blocker_id uuid := auth.uid();
+begin
+  if v_blocker_id is null then
+    raise exception 'authentication required' using errcode = '42501';
+  end if;
+  if p_blocked_id is null or p_blocked_id = v_blocker_id then
+    raise exception 'cannot block this account' using errcode = '22023';
+  end if;
+
+  insert into public.blocks (blocker_id, blocked_id)
+  values (v_blocker_id, p_blocked_id)
+  on conflict (blocker_id, blocked_id) do nothing;
+
+  update public.connection_requests
+  set status = 'blocked',
+      decided_at = now()
+  where status in ('pending', 'accepted')
+    and (
+      (requester_id = v_blocker_id and recipient_id = p_blocked_id)
+      or (requester_id = p_blocked_id and recipient_id = v_blocker_id)
+    );
+end;
+$$;
+
+-- Remove the old direct browser INSERT path so active relationships cannot be
+-- left intact by bypassing block_user(). Existing owner-only read/delete policies
+-- remain, allowing a blocker to inspect and later remove their own block.
+drop policy if exists "blocks own insert" on public.blocks;
+
 revoke all on function public.request_connection(uuid) from public, anon;
 grant execute on function public.request_connection(uuid) to authenticated;
 
 revoke all on function public.decide_connection_request(uuid, text) from public, anon;
 grant execute on function public.decide_connection_request(uuid, text) to authenticated;
+
+revoke all on function public.block_user(uuid) from public, anon;
+grant execute on function public.block_user(uuid) to authenticated;
