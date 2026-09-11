@@ -8,7 +8,7 @@ A checked repository item means the implementation exists and is covered by repo
 
 - [x] Define principal/agent identity schema
 - [x] Implement deny-by-default capability model
-- [ ] Add capability matrix validation
+- [x] Add capability matrix validation
 - [x] Define action/provenance event schemas
 - [x] Implement rate limits for agent registration/actions
 - [x] Add permission, attribution, and rate-limit tests

@@ -25,6 +25,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
+      - run: npm run validate:governance
       - run: npm test
 
   web-build:
