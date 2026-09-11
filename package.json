@@ -8,7 +8,7 @@
     "packages/*",
     "agents/*"
   ],
-  "engines": {"node": ">=20"},
+  "engines": {"node": ">=22"},
   "scripts": {
     "test": "node --test",
     "check": "find packages agents tests -name '*.js' -type f -print0 2>/dev/null | xargs -0 -r -n1 node --check",
