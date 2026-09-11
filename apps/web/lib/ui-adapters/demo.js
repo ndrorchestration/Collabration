@@ -36,6 +36,10 @@ export function createDemoUiAdapter(viewer = DEMO_VIEWER) {
       return demoStore.getSources();
     },
 
+    approvals() {
+      return Object.freeze([...(demoStore.get().approvals ?? [])]);
+    },
+
     actions: Object.freeze({
       toggleReaction(postId, reaction) {
         demoStore.toggleReaction(postId, viewer.id, reaction);
@@ -64,6 +68,10 @@ export function createDemoUiAdapter(viewer = DEMO_VIEWER) {
 
       addSource(source) {
         return demoStore.addSource(source);
+      },
+
+      decideAgentAction(actionId, decision) {
+        demoStore.recordApproval(actionId, viewer.id, decision, 'Demo decision — browser-local only.');
       }
     })
   });
