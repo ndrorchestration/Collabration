@@ -16,6 +16,12 @@ test('migration adds explicit Space join policy and removes direct self-join aut
   assert.match(sql, /role\)\s*values\s*\(p_space_id, v_user_id, 'member'\)/is);
 });
 
+test('join-policy authority removes the legacy generic creator Space update path', () => {
+  const sql = read(migrationPath);
+  assert.match(sql, /drop policy if exists "spaces creator update" on public\.spaces/i);
+  assert.doesNotMatch(sql, /create policy "spaces creator update" on public\.spaces/i);
+});
+
 test('invitation table is RLS protected and member-only by construction', () => {
   const sql = read(migrationPath);
   assert.match(sql, /create table public\.space_invitations/i);
