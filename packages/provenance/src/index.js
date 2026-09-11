@@ -40,6 +40,10 @@ export function createProvenanceRecord({ sourceObjects, transformations = [], ge
 
 export function assertContentPassport(passport) {
   if (!passport || typeof passport !== 'object') throw new TypeError('content passport is required');
+  if (passport.kind !== 'content_passport') throw new Error('content passport kind must be content_passport');
+  if (passport.schemaVersion !== CONTENT_PASSPORT_SCHEMA_VERSION) {
+    throw new Error(`content passport schema version must be ${CONTENT_PASSPORT_SCHEMA_VERSION}`);
+  }
   if (!isNonEmptyString(passport.subject?.id) || !isNonEmptyString(passport.subject?.revisionId)) {
     throw new Error('content passport requires exact subject revision identity');
   }
