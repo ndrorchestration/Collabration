@@ -1,13 +1,21 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { buildPermissionInspection, loadCapabilityMatrix } from '../packages/governance/src/index.js';
+import {
+  ALPHA_CAPABILITY_MATRIX,
+  buildPermissionInspection,
+  loadCapabilityMatrix
+} from '../packages/governance/src/index.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const matrix = loadCapabilityMatrix(read('governance/capability-matrix.yaml'));
 
+test('executable alpha policy projection is exactly equal to canonical YAML', () => {
+  assert.deepEqual(ALPHA_CAPABILITY_MATRIX, matrix);
+});
+
 test('permission inspection exposes declared decisions and default-denies unknown capabilities', () => {
-  const inspection = buildPermissionInspection(matrix, 'community_agent', ['unknown_future_capability']);
+  const inspection = buildPermissionInspection(ALPHA_CAPABILITY_MATRIX, 'community_agent', ['unknown_future_capability']);
   assert.equal(inspection.version, '0.1.0-alpha');
   assert.equal(inspection.agentType, 'community_agent');
   assert.equal(inspection.defaultDecision, 'deny');
@@ -19,7 +27,7 @@ test('permission inspection exposes declared decisions and default-denies unknow
 });
 
 test('claim agent inspection preserves denied moderation and approval-required publication', () => {
-  const inspection = buildPermissionInspection(matrix, 'claim_agent');
+  const inspection = buildPermissionInspection(ALPHA_CAPABILITY_MATRIX, 'claim_agent');
   assert.equal(inspection.capabilities.find((item) => item.capability === 'moderate_user')?.decision, 'deny');
   assert.equal(inspection.capabilities.find((item) => item.capability === 'publish_annotation')?.decision, 'approval_required');
 });
@@ -31,4 +39,5 @@ test('persisted app exposes permission inspector and RLS-bound action history wi
   assert.match(page, /from\('agent_actions'\)/);
   assert.match(page, /approval_records/);
   assert.match(page, /buildPermissionInspection/);
+  assert.match(page, /ALPHA_CAPABILITY_MATRIX/);
 });
