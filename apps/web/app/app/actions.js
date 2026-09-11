@@ -8,6 +8,8 @@ const RESPONSE_TYPES = new Set(['support', 'challenge', 'qualify', 'add_evidence
 const SUPPORTED_REACTIONS = new Set(['like', 'useful', 'interesting']);
 const SUPPORTED_REPORT_REASONS = new Set(['spam', 'harassment', 'misleading', 'other']);
 const CONNECTION_DECISIONS = new Set(['accepted', 'declined', 'cancelled']);
+const SPACE_INVITATION_DECISIONS = new Set(['accepted', 'declined']);
+const SPACE_JOIN_POLICIES = new Set(['open', 'invite_only']);
 const REQUESTABLE_AGENT_CAPABILITIES = new Map([
   ['community_agent', new Set(['draft_public_content', 'publish_public_content'])],
   ['claim_agent', new Set(['draft_annotation', 'publish_annotation'])]
@@ -94,12 +96,56 @@ export async function createSpace(formData) {
 }
 
 export async function joinSpace(formData) {
+  const { supabase } = await authenticatedClient();
+  const spaceId = requiredId(formData, 'space_id');
+  const { error } = await supabase.rpc('join_open_space', { p_space_id: spaceId });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function inviteToSpace(formData) {
   const { supabase, claims } = await authenticatedClient();
   const spaceId = requiredId(formData, 'space_id');
-  const { error } = await supabase.from('space_memberships').upsert(
-    { space_id: spaceId, user_id: claims.sub, role: 'member' },
-    { onConflict: 'space_id,user_id', ignoreDuplicates: true }
-  );
+  const inviteeId = requiredId(formData, 'invitee_id');
+  assertDifferentUser(claims.sub, inviteeId);
+  const { error } = await supabase.rpc('invite_to_space', {
+    p_space_id: spaceId,
+    p_invitee_id: inviteeId
+  });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function decideSpaceInvitation(formData) {
+  const { supabase } = await authenticatedClient();
+  const invitationId = requiredId(formData, 'invitation_id');
+  const decision = requiredText(formData, 'decision', 20);
+  if (!SPACE_INVITATION_DECISIONS.has(decision)) throw new Error('Unsupported Space invitation decision');
+  const { error } = await supabase.rpc('decide_space_invitation', {
+    p_invitation_id: invitationId,
+    p_decision: decision
+  });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function revokeSpaceInvitation(formData) {
+  const { supabase } = await authenticatedClient();
+  const invitationId = requiredId(formData, 'invitation_id');
+  const { error } = await supabase.rpc('revoke_space_invitation', { p_invitation_id: invitationId });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function setSpaceJoinPolicy(formData) {
+  const { supabase } = await authenticatedClient();
+  const spaceId = requiredId(formData, 'space_id');
+  const joinPolicy = requiredText(formData, 'join_policy', 20);
+  if (!SPACE_JOIN_POLICIES.has(joinPolicy)) throw new Error('Unsupported Space join policy');
+  const { error } = await supabase.rpc('set_space_join_policy', {
+    p_space_id: spaceId,
+    p_join_policy: joinPolicy
+  });
   if (error) throw error;
   refreshApp();
 }

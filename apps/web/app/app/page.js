@@ -20,7 +20,9 @@ import {
   createSpace,
   decideAgentAction,
   decideConnectionRequest,
+  decideSpaceInvitation,
   disconnectConnection,
+  inviteToSpace,
   joinSpace,
   muteMember,
   removeReaction,
@@ -29,7 +31,9 @@ import {
   requestConnection,
   requestCorrectionOrAppeal,
   resolveCorrectionOrAppeal,
+  revokeSpaceInvitation,
   setReaction,
+  setSpaceJoinPolicy,
   unblockMember,
   unmuteMember,
   upsertProfile
@@ -94,11 +98,12 @@ export default async function PersistedAppPage({ searchParams }) {
     { data: blocks = [] },
     { data: mutes = [] },
     { data: discoverableProfiles = [] },
-    { data: connectionRows = [] }
+    { data: connectionRows = [] },
+    { data: invitationRows = [] }
   ] = await Promise.all([
     supabase.from('profiles').select('id,handle,display_name,bio').eq('id', userId).maybeSingle(),
     supabase.from('space_memberships').select('space_id,role,created_at').eq('user_id', userId).order('created_at', { ascending: true }),
-    supabase.from('spaces').select('id,slug,name,description,created_at').order('created_at', { ascending: true }),
+    supabase.from('spaces').select('id,slug,name,description,join_policy,created_at').order('created_at', { ascending: true }),
     supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
     supabase.from('mutes').select('muted_id').eq('muter_id', userId),
     supabase.from('profiles').select('id,handle,display_name').order('display_name', { ascending: true }).limit(50),
@@ -106,6 +111,11 @@ export default async function PersistedAppPage({ searchParams }) {
       .from('connection_requests')
       .select('id,requester_id,recipient_id,status,created_at,decided_at,ended_at')
       .in('status', ['pending', 'accepted'])
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('space_invitations')
+      .select('id,space_id,inviter_id,invitee_id,granted_role,status,created_at,decided_at')
+      .eq('status', 'pending')
       .order('created_at', { ascending: false })
   ]);
 
@@ -130,7 +140,10 @@ export default async function PersistedAppPage({ searchParams }) {
       .filter((id) => id !== userId)
   );
   const discoverablePeople = discoverableProfiles.filter((person) => person.id !== userId && !activeConnectionUserIds.has(person.id));
+  const invitablePeople = discoverableProfiles.filter((person) => person.id !== userId);
   const peopleMap = byId(discoverableProfiles);
+  const incomingSpaceInvitations = invitationRows.filter((row) => row.invitee_id === userId);
+  const outgoingSpaceInvitations = invitationRows.filter((row) => row.inviter_id === userId);
 
   let posts = [];
   let authorMap = {};
@@ -228,7 +241,23 @@ export default async function PersistedAppPage({ searchParams }) {
 
   let content;
   if (activeView === 'spaces') {
-    content = <SpacesPanel memberships={memberships} spaces={spaces} spaceMap={spaceMap} availableSpaces={availableSpaces} createSpace={createSpace} joinSpace={joinSpace} />;
+    content = (
+      <SpacesPanel
+        memberships={memberships}
+        spaceMap={spaceMap}
+        availableSpaces={availableSpaces}
+        incomingSpaceInvitations={incomingSpaceInvitations}
+        outgoingSpaceInvitations={outgoingSpaceInvitations}
+        invitablePeople={invitablePeople}
+        peopleMap={peopleMap}
+        createSpace={createSpace}
+        joinSpace={joinSpace}
+        inviteToSpace={inviteToSpace}
+        decideSpaceInvitation={decideSpaceInvitation}
+        revokeSpaceInvitation={revokeSpaceInvitation}
+        setSpaceJoinPolicy={setSpaceJoinPolicy}
+      />
+    );
   } else if (activeView === 'people') {
     content = (
       <PeoplePanel
