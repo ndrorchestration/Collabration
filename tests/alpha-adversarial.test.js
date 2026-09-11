@@ -66,6 +66,6 @@ test('threat model reflects implemented repository controls without promoting li
   assert.doesNotMatch(threat, /trusted server path that creates `agent_actions` is intentionally not implemented yet/i);
   assert.doesNotMatch(threat, /implement and test the trusted server writer for agent action\/provenance records/i);
   assert.doesNotMatch(threat, /add moderator review queue and appeal\/correction workflow/i);
-  assert.match(threat, /live browser/i);
+  assert.match(threat, /(?:live|real) browser/i);
   assert.match(threat, /NOT VERIFIED/);
 });
