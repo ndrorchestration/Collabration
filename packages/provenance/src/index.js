@@ -6,6 +6,8 @@ const CONTENT_PASSPORT_FORBIDDEN_SEMANTICS = Object.freeze([
   'correct'
 ]);
 
+const CONTENT_PASSPORT_SCHEMA_VERSION = '0.1.0-alpha';
+
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -70,12 +72,14 @@ export function assertContentPassport(passport) {
 
 export function createContentPassport({ subject, sourceRevisions, transformations = [], responsibleActors, generatedAt }) {
   const passport = {
-    subject: { ...subject },
-    sourceRevisions: [...(sourceRevisions ?? [])].map((source) => ({ ...source })),
-    transformations: Array.isArray(transformations) ? [...transformations] : transformations,
-    responsibleActors: [...(responsibleActors ?? [])].map((actor) => ({ ...actor })),
+    kind: 'content_passport',
+    schemaVersion: CONTENT_PASSPORT_SCHEMA_VERSION,
+    subject: Object.freeze({ ...subject }),
+    sourceRevisions: Object.freeze([...(sourceRevisions ?? [])].map((source) => Object.freeze({ ...source }))),
+    transformations: Array.isArray(transformations) ? Object.freeze([...transformations]) : transformations,
+    responsibleActors: Object.freeze([...(responsibleActors ?? [])].map((actor) => Object.freeze({ ...actor }))),
     generatedAt
   };
   assertContentPassport(passport);
-  return passport;
+  return Object.freeze(passport);
 }
