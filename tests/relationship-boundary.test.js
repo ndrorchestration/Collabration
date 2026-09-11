@@ -61,3 +61,31 @@ test('server actions route relationship changes through narrow RPCs without acce
   assert.match(actions, /\.rpc\('decide_connection_request'/);
   assert.doesNotMatch(actions, /formData\.get\(['"](?:requester_id|recipient_id|actor_id)['"]\)/);
 });
+
+test('profile discovery is reciprocally block-aware at the database boundary', () => {
+  const migration = read(migrationPath);
+  assert.match(migration, /create or replace function public\.is_blocked_with_current_user\(p_other_id uuid\)/i);
+  assert.match(migration, /auth\.uid\(\).*blocker_id.*blocked_id/s);
+  assert.match(migration, /drop policy if exists "profiles authenticated read" on public\.profiles/i);
+  assert.match(migration, /create policy "profiles block-aware read" on public\.profiles/i);
+  assert.match(migration, /auth\.uid\(\).*id.*is_blocked_with_current_user\(id\)/s);
+});
+
+test('blocking is atomic with active-relationship severance and cannot be bypassed by direct insert', () => {
+  const migration = read(migrationPath);
+  const actions = read('apps/web/app/app/actions.js');
+  assert.match(migration, /status in \('pending', 'accepted', 'declined', 'cancelled', 'blocked'\)/i);
+  assert.match(migration, /create or replace function public\.block_user\(p_blocked_id uuid\)/i);
+  assert.match(migration, /insert into public\.blocks.*v_blocker_id.*p_blocked_id/s);
+  assert.match(migration, /update public\.connection_requests.*status = 'blocked'.*status in \('pending', 'accepted'\)/s);
+  assert.match(migration, /drop policy if exists "blocks own insert" on public\.blocks/i);
+  assert.match(migration, /revoke all on function public\.block_user\(uuid\) from public, anon/i);
+  assert.match(migration, /grant execute on function public\.block_user\(uuid\) to authenticated/i);
+  assert.match(actions, /export async function blockMember\([\s\S]*?\.rpc\('block_user'/);
+  assert.doesNotMatch(actions, /from\('blocks'\)\.upsert/);
+});
+
+test('blocked pairs cannot inspect connection rows while block is active', () => {
+  const migration = read(migrationPath);
+  assert.match(migration, /create policy "connection participants read"[\s\S]*is_blocked_with_current_user/i);
+});
