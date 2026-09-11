@@ -38,26 +38,15 @@ test('content passport binds a subject revision to source revisions and responsi
 
 test('content passport requires at least one exact source revision', () => {
   assert.equal(typeof provenance.assertContentPassport, 'function');
-  assert.throws(
-    () => provenance.createContentPassport(validPassportInput({ sourceRevisions: [] })),
-    /source revision/i
-  );
+  assert.throws(() => provenance.createContentPassport(validPassportInput({ sourceRevisions: [] })), /source revision/i);
 });
 
 test('content passport requires an exact subject id and revision id', () => {
-  assert.throws(
-    () => provenance.createContentPassport(validPassportInput({ subject: { id: 'post-123' } })),
-    /subject revision/i
-  );
+  assert.throws(() => provenance.createContentPassport(validPassportInput({ subject: { id: 'post-123' } })), /subject revision/i);
 });
 
 test('source revision lineage must be exact and unambiguous', () => {
-  assert.throws(
-    () => provenance.createContentPassport(validPassportInput({
-      sourceRevisions: [{ sourceId: 'source-a' }]
-    })),
-    /source revision/i
-  );
+  assert.throws(() => provenance.createContentPassport(validPassportInput({ sourceRevisions: [{ sourceId: 'source-a' }] })), /source revision/i);
   assert.throws(
     () => provenance.createContentPassport(validPassportInput({
       sourceRevisions: [
@@ -70,10 +59,7 @@ test('source revision lineage must be exact and unambiguous', () => {
 });
 
 test('content passport requires accountable human or agent actors', () => {
-  assert.throws(
-    () => provenance.createContentPassport(validPassportInput({ responsibleActors: [] })),
-    /responsible actor/i
-  );
+  assert.throws(() => provenance.createContentPassport(validPassportInput({ responsibleActors: [] })), /responsible actor/i);
   assert.throws(
     () => provenance.createContentPassport(validPassportInput({
       responsibleActors: [{ actorId: 'service-1', actorType: 'service' }]
@@ -83,14 +69,8 @@ test('content passport requires accountable human or agent actors', () => {
 });
 
 test('content passport validates transformation shape and generation time', () => {
-  assert.throws(
-    () => provenance.createContentPassport(validPassportInput({ transformations: 'summarize' })),
-    /transformations/i
-  );
-  assert.throws(
-    () => provenance.createContentPassport(validPassportInput({ generatedAt: 'not-a-date' })),
-    /generatedAt/i
-  );
+  assert.throws(() => provenance.createContentPassport(validPassportInput({ transformations: 'summarize' })), /transformations/i);
+  assert.throws(() => provenance.createContentPassport(validPassportInput({ generatedAt: 'not-a-date' })), /generatedAt/i);
 });
 
 test('content passport rejects truth confidence verification and certification semantics', () => {
@@ -102,4 +82,27 @@ test('content passport rejects truth confidence verification and certification s
       /not a truth|forbidden semantic/i
     );
   }
+});
+
+test('content passport is a typed versioned immutable snapshot', () => {
+  const input = validPassportInput();
+  const passport = provenance.createContentPassport(input);
+
+  assert.equal(passport.kind, 'content_passport');
+  assert.equal(passport.schemaVersion, '0.1.0-alpha');
+  assert.equal(Object.isFrozen(passport), true);
+  assert.equal(Object.isFrozen(passport.subject), true);
+  assert.equal(Object.isFrozen(passport.sourceRevisions), true);
+  assert.equal(Object.isFrozen(passport.sourceRevisions[0]), true);
+  assert.equal(Object.isFrozen(passport.transformations), true);
+  assert.equal(Object.isFrozen(passport.responsibleActors), true);
+  assert.equal(Object.isFrozen(passport.responsibleActors[0]), true);
+
+  input.subject.revisionId = 'post-123@r3';
+  input.sourceRevisions[0].revisionId = 'source-a@r5';
+  input.responsibleActors[0].actorId = 'other-agent';
+
+  assert.equal(passport.subject.revisionId, 'post-123@r2');
+  assert.equal(passport.sourceRevisions[0].revisionId, 'source-a@r4');
+  assert.equal(passport.responsibleActors[0].actorId, 'claim-agent-1');
 });
