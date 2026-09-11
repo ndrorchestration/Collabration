@@ -9,10 +9,12 @@ import {
   createComment,
   createPost,
   createSpace,
+  decideAgentAction,
   joinSpace,
   muteMember,
   removeReaction,
   reportPost,
+  requestAgentAction,
   setReaction,
   unblockMember,
   unmuteMember,
@@ -82,6 +84,8 @@ export default async function PersistedAppPage({ searchParams }) {
   const requestedSpace = typeof params?.space === 'string' ? params.space : null;
   const activeSpaceId = requestedSpace && membershipIds.has(requestedSpace) ? requestedSpace : memberships[0]?.space_id ?? null;
   const activeSpace = activeSpaceId ? spaceMap[activeSpaceId] : null;
+  const activeMembership = memberships.find((membership) => membership.space_id === activeSpaceId);
+  const canModerate = ['moderator', 'admin'].includes(activeMembership?.role);
   const availableSpaces = spaces.filter((space) => !membershipIds.has(space.id));
 
   let posts = [];
@@ -116,6 +120,7 @@ export default async function PersistedAppPage({ searchParams }) {
     }
   }
 
+  const pendingActions = agentActions.filter((action) => action.approval_status === 'pending');
   let safetyProfileMap = {};
   const safetyIds = [...excludedAuthorIds];
   if (safetyIds.length) {
@@ -178,6 +183,13 @@ export default async function PersistedAppPage({ searchParams }) {
           </form>
         </section>}
 
+        {activeSpace && <details className="composer-card">
+          <summary>Request governed agent draft</summary>
+          <p className="context-note">This creates a pending governance record only. No model executes from this request and no public content is published.</p>
+          <form action={requestAgentAction} className="login-form"><input type="hidden" name="space_id" value={activeSpace.id} /><input type="hidden" name="agent_id" value="community_agent" /><input type="hidden" name="capability" value="draft_public_content" /><button type="submit">Request Community Agent public draft review</button></form>
+          <form action={requestAgentAction} className="login-form"><input type="hidden" name="space_id" value={activeSpace.id} /><input type="hidden" name="agent_id" value="claim_agent" /><input type="hidden" name="capability" value="draft_annotation" /><button type="submit">Request Claim Agent annotation review</button></form>
+        </details>}
+
         {activeSpace && <div className="feed-label"><span>Chronological feed</span><span>No ranking model</span></div>}
 
         {posts.map((post) => {
@@ -215,6 +227,12 @@ export default async function PersistedAppPage({ searchParams }) {
           <p className="context-note">Permission does not mean an action occurred. Unknown capabilities default to deny.</p>
           {permissionInspections.map((inspection) => <div key={inspection.agentType}><p><strong>{inspection.agentType.replace('_', ' ')}</strong> · policy {inspection.version}</p>{inspection.capabilities.map((item) => <p className="context-note" key={item.capability}>{item.capability.replaceAll('_', ' ')} · <strong>{item.decision}</strong></p>)}</div>)}
         </details>
+        {canModerate && <details className="side-card" open={pendingActions.length > 0}>
+          <summary>Moderator review queue · {pendingActions.length}</summary>
+          <p className="context-note">A decision updates the governed record only. It does not execute a model or publish output.</p>
+          {pendingActions.length === 0 && <p className="context-note">No pending governed actions.</p>}
+          {pendingActions.map((action) => <form action={decideAgentAction} className="login-form" key={action.id}><input type="hidden" name="action_id" value={action.id} /><p className="context-note"><strong>{action.agent_id}</strong> · {action.capability}</p><select name="decision" defaultValue="approved"><option value="approved">Approve</option><option value="rejected">Reject</option></select><textarea name="note" placeholder="Decision note · optional" /><button type="submit">Record human decision</button></form>)}
+        </details>}
         <details className="side-card">
           <summary>Governed action log · {agentActions.length}</summary>
           <p className="context-note">This view is read-only and constrained by database RLS.</p>
