@@ -41,9 +41,12 @@ PR #9 established the accepted governed/persisted-alpha repository base. Post-#9
 - [x] Add permission inspector
 - [x] Add action-log viewer
 - [x] Add correction / appeal flow (append-only request/resolution ledger; original target remains unchanged)
-- [ ] Evolve provenance into distinct Content Passport, Action Receipt, and Verification Result contracts without collapsing them into a trust score
-- [ ] Add immutable/revision-aware subject identity for derived AI content
-- [ ] Surface `inputs changed since generation` when a bound source revision advances
+- [x] Define repository-level Content Passport `0.1.0-alpha` contract with exact subject/source revision lineage, accountable human/agent actors, immutable snapshots, and fail-closed currentness states
+- [x] Define immutable/revision-aware subject identity and source-revision comparison semantics in the Content Passport package contract
+- [ ] Bind persisted/derived application content to Content Passport subject and source revisions
+- [ ] Surface `inputs changed since generation` when a persisted bound source revision advances
+- [ ] Define the distinct Action Receipt contract without treating approval/execution as correctness
+- [ ] Define the distinct Verification Result contract without implying broader certification
 
 ## Phase 3 — Bounded agents
 
@@ -138,40 +141,3 @@ Progression:
 - [ ] Define transparent execution allowances rather than exposing raw token accounting
 - [ ] Launch-jurisdiction privacy/AI-transparency/moderation review
 - [ ] Data retention/export/delete flows
-- [ ] Optional interoperability adapters only when real demand exists
-
-## Product/evidence KPIs
-
-Keep value, comprehension, integrity, reliability, and economics separate rather than creating a composite trust score.
-
-- **Weekly Collaborative Outcomes:** shared artifacts, resolved research questions, accepted project outputs, or completed collaborative tasks involving meaningful human participation.
-- **Activation:** user establishes a meaningful relationship/Space and completes a first useful collaboration.
-- **Personal Agent value:** drafts/research results accepted, edited, discarded, reused.
-- **Contextual Trust Comprehension:** correct authorship, AI-role, authority, approval, source/dispute/currentness, and correction-path understanding.
-- **Governance burden:** added time/steps and abandonment caused by governance interactions.
-- **Safety invariant:** unauthorized action escapes, cross-user/private-memory leaks, replay successes.
-- **Reliability:** authentication success, action failure rate, governance queue latency, p95 agent/task latency.
-- **Economics:** AI/tool cost per accepted outcome and paid conversion/contribution margins.
-
-Some security properties remain hard release invariants rather than statistical KPIs: no accepted forged identity, no known cross-tenant private-data access, no replayable consumed approval, no self-issued capability expansion, and no consequential production action missing its required authoritative record.
-
-## Explicitly deferred
-
-Do not pull these into the alpha unless a separate decision record changes scope:
-
-- algorithmic engagement feed ranking
-- autonomous public agent posting
-- open agent marketplace
-- federation
-- full DID/portable cryptographic identity system
-- native mobile applications
-- livestreaming
-- reels-style video infrastructure
-- advertising system
-- proprietary engagement optimization
-- broad unattended personal-agent automation
-- autonomous moderation/banning/policy mutation
-
-## Authority-expansion gate
-
-Autonomous or higher-impact agent capabilities are not roadmap inevitabilities. They require evidence from observed product behavior, a threat review, updated permission/adversarial tests, runtime evidence, rollback/revocation behavior, and an explicit Intellectro-native release decision. Repository or database completion alone does not authorize any expansion.
