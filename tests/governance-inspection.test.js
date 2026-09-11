@@ -34,10 +34,12 @@ test('claim agent inspection preserves denied moderation and approval-required p
 
 test('persisted app exposes permission inspector and RLS-bound action history without execution claims', () => {
   const page = read('apps/web/app/app/page.js');
-  assert.match(page, /Permission inspector/);
-  assert.match(page, /Permission does not mean an action occurred/);
+  const review = read('apps/web/components/review-panel.js');
+  assert.match(review, /Permission inspector/);
+  assert.match(review, /Permission does not mean an action occurred/);
   assert.match(page, /from\('agent_actions'\)/);
   assert.match(page, /approval_records/);
   assert.match(page, /buildPermissionInspection/);
   assert.match(page, /ALPHA_CAPABILITY_MATRIX/);
+  assert.match(page, /permissionInspections=\{permissionInspections\}/);
 });
