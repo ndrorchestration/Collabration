@@ -38,8 +38,11 @@ test('application routes requests and decisions through governed RPCs', () => {
 
 test('persisted app exposes bounded request and moderator decision controls without claiming execution', () => {
   const page = read('apps/web/app/app/page.js');
+  const review = read('apps/web/components/review-panel.js');
   assert.match(page, /Request governed agent draft/);
   assert.match(page, /No model executes from this request/);
-  assert.match(page, /Moderator review queue/);
-  assert.match(page, /decideAgentAction/);
+  assert.match(review, /Pending agent actions/);
+  assert.match(review, /Approval does not execute a model, establish truth, or publish output by itself/);
+  assert.match(review, /decideAgentAction/);
+  assert.match(page, /decideAgentAction=\{decideAgentAction\}/);
 });
