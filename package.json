@@ -13,6 +13,7 @@
     "test": "node --test",
     "check": "find packages agents tests scripts \\( -name '*.js' -o -name '*.mjs' \\) -type f -print0 2>/dev/null | xargs -0 -r -n1 node --check",
     "validate:governance": "node scripts/validate-governance.mjs",
+    "verify:production-preflight": "node scripts/production-gate-preflight.mjs",
     "dev:web": "npm run dev --workspace @intellectro/web",
     "build:web": "npm run build --workspace @intellectro/web"
   }
