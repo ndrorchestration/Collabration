@@ -293,3 +293,38 @@ export async function recordApprovedActionProvenance(formData) {
   if (error) throw error;
   refreshApp();
 }
+
+export async function requestCorrectionOrAppeal(formData) {
+  const { supabase } = await authenticatedClient();
+  const postId = optionalText(formData, 'post_id', 80) || null;
+  const actionId = optionalText(formData, 'action_id', 80) || null;
+  const requestKind = requiredText(formData, 'request_kind', 20);
+  const requestText = requiredText(formData, 'request_text', 10000);
+  if (!['correction', 'appeal'].includes(requestKind)) throw new Error('Unsupported correction request kind');
+  if ((postId ? 1 : 0) + (actionId ? 1 : 0) !== 1) throw new Error('Exactly one correction target is required');
+
+  const { error } = await supabase.rpc('request_correction_or_appeal', {
+    p_post_id: postId,
+    p_action_id: actionId,
+    p_request_kind: requestKind,
+    p_request_text: requestText
+  });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function resolveCorrectionOrAppeal(formData) {
+  const { supabase } = await authenticatedClient();
+  const requestId = requiredId(formData, 'request_id');
+  const status = requiredText(formData, 'status', 20);
+  const resolutionNote = optionalText(formData, 'resolution_note', 10000);
+  if (!['accepted', 'rejected', 'resolved'].includes(status)) throw new Error('Unsupported correction resolution status');
+
+  const { error } = await supabase.rpc('resolve_correction_or_appeal', {
+    p_request_id: requestId,
+    p_status: status,
+    p_resolution_note: resolutionNote
+  });
+  if (error) throw error;
+  refreshApp();
+}
