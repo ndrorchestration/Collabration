@@ -4,12 +4,15 @@
   "version": "0.0.1-alpha",
   "type": "module",
   "workspaces": [
+    "apps/*",
     "packages/*",
     "agents/*"
   ],
   "engines": {"node": ">=20"},
   "scripts": {
     "test": "node --test",
-    "check": "find packages agents -name '*.js' -type f -print0 2>/dev/null | xargs -0 -r -n1 node --check"
+    "check": "find packages agents tests -name '*.js' -type f -print0 2>/dev/null | xargs -0 -r -n1 node --check",
+    "dev:web": "npm run dev --workspace @intellectro/web",
+    "build:web": "npm run build --workspace @intellectro/web"
   }
 }
