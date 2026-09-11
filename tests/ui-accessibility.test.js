@@ -28,6 +28,14 @@ test('mobile keeps navigation when the desktop sidebar is hidden', () => {
   assert.match(css, /min-height: 44px/);
 });
 
+test('context remains reachable when the desktop right rail is hidden', () => {
+  const shell = read('apps/web/components/app-shell.js');
+  const css = read('apps/web/app/product-shell.css');
+  assert.match(shell, /product-mobile-context/);
+  assert.match(shell, /<ContextDrawer label="View page context">/);
+  assert.match(css, /@media \(max-width: 1050px\)[\s\S]*\.product-mobile-context[\s\S]*display:/);
+});
+
 test('structural palette uses neutral surfaces and semantic accents', () => {
   const css = read('apps/web/app/product-shell.css');
   assert.match(css, /--surface:/);
