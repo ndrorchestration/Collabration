@@ -4,6 +4,7 @@ import * as social from '../src/index.js';
 
 const createdAt = '2026-09-11T08:50:00.000Z';
 const decidedAt = '2026-09-11T08:55:00.000Z';
+const endedAt = '2026-09-11T09:00:00.000Z';
 
 test('connection requests start pending between two distinct humans', () => {
   assert.equal(typeof social.createConnectionRequest, 'function');
@@ -38,6 +39,22 @@ test('only the recipient may accept or decline and only the requester may cancel
   assert.throws(() => social.transitionConnectionRequest(request, { actorId: 'user-a', decision: 'accepted', decidedAt }), /recipient/i);
   assert.throws(() => social.transitionConnectionRequest(request, { actorId: 'user-b', decision: 'cancelled', decidedAt }), /requester/i);
   assert.throws(() => social.transitionConnectionRequest({ ...request, status: 'accepted', decidedAt }, { actorId: 'user-b', decision: 'declined', decidedAt }), /pending/i);
+});
+
+test('either participant may disconnect an accepted connection without rewriting its acceptance time', () => {
+  assert.equal(typeof social.disconnectAcceptedConnection, 'function');
+  const request = social.createConnectionRequest({ id: 'connection-1', requesterId: 'user-a', recipientId: 'user-b', createdAt });
+  const accepted = social.transitionConnectionRequest(request, { actorId: 'user-b', decision: 'accepted', decidedAt });
+
+  for (const actorId of ['user-a', 'user-b']) {
+    const disconnected = social.disconnectAcceptedConnection(accepted, { actorId, endedAt });
+    assert.equal(disconnected.status, 'disconnected');
+    assert.equal(disconnected.decidedAt, decidedAt);
+    assert.equal(disconnected.endedAt, endedAt);
+  }
+
+  assert.throws(() => social.disconnectAcceptedConnection(accepted, { actorId: 'user-c', endedAt }), /participant/i);
+  assert.throws(() => social.disconnectAcceptedConnection(request, { actorId: 'user-a', endedAt }), /accepted/i);
 });
 
 test('block precedence defeats discovery, invitations, and new connections in either direction', () => {
