@@ -53,6 +53,13 @@ test('acceptance rejects a stale invitation when the invitee already became a Sp
   assert.match(sql, /if exists \([\s\S]*from public\.space_memberships sm[\s\S]*sm\.space_id = v_space_id[\s\S]*sm\.user_id = v_invitee_id[\s\S]*\) then[\s\S]*raise exception 'user is already a Space member'/i);
 });
 
+test('acceptance rechecks current Space policy before finalizing the invitation', () => {
+  const sql = read(migrationPath);
+  assert.match(sql, /v_join_policy text/i);
+  assert.match(sql, /select s\.join_policy into v_join_policy[\s\S]*from public\.spaces s[\s\S]*where s\.id = v_space_id/i);
+  assert.match(sql, /if p_decision = 'accepted' and v_join_policy <> 'invite_only' then[\s\S]*raise exception 'Space no longer requires an invitation'/i);
+});
+
 test('blocking terminalizes pending invitations without rewriting accepted membership', () => {
   const sql = read(migrationPath);
   assert.match(sql, /create or replace function public\.block_user\(p_blocked_id uuid\)/i);
