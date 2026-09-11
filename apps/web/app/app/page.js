@@ -48,6 +48,10 @@ function filterVisibleDiscussion(rows, excludedAuthorIds) {
     }));
 }
 
+function correctionTargetSpaceId(request) {
+  return request.posts?.space_id ?? request.agent_actions?.space_id ?? null;
+}
+
 export default async function PersistedAppPage({ searchParams }) {
   const config = getSupabasePublicConfig();
   if (!config.configured) {
@@ -93,9 +97,15 @@ export default async function PersistedAppPage({ searchParams }) {
   let posts = [];
   let authorMap = {};
   let agentActions = [];
+  let pendingActions = [];
   let correctionRequests = [];
   if (activeSpace) {
-    const [{ data: persistedPosts = [] }, { data: governedActions = [] }, { data: visibleCorrections = [] }] = await Promise.all([
+    const [
+      { data: persistedPosts = [] },
+      { data: governedActions = [] },
+      { data: pendingGovernedActions = [] },
+      { data: visibleCorrections = [] }
+    ] = await Promise.all([
       supabase
         .from('posts')
         .select('id,author_id,body,kind,ai_assisted,ai_assistance_type,agent_id,human_approved,created_at,post_sources(source_id,sources(id,url,title,publisher)),comments(id,author_id,body,created_at),claim_responses(id,author_id,response_type,body,created_at),reactions(user_id,reaction)')
@@ -109,19 +119,21 @@ export default async function PersistedAppPage({ searchParams }) {
         .order('created_at', { ascending: false })
         .limit(20),
       supabase
+        .from('agent_actions')
+        .select('id,agent_id,owner_id,action,capability,policy_version,approval_status,created_at')
+        .eq('space_id', activeSpace.id)
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: true }),
+      supabase
         .from('correction_requests')
-        .select('id,requester_id,post_id,action_id,request_kind,request_text,status,resolution_note,resolved_by,created_at,resolved_at')
+        .select('id,requester_id,post_id,action_id,request_kind,request_text,status,resolution_note,resolved_by,created_at,resolved_at,posts(space_id),agent_actions(space_id)')
         .order('created_at', { ascending: false })
         .limit(50)
     ]);
     posts = filterVisibleDiscussion(persistedPosts, excludedAuthorIds);
     agentActions = governedActions;
-    const activePostIds = new Set(persistedPosts.map((post) => post.id));
-    const activeActionIds = new Set(governedActions.map((action) => action.id));
-    correctionRequests = visibleCorrections.filter((request) =>
-      (request.post_id && activePostIds.has(request.post_id)) ||
-      (request.action_id && activeActionIds.has(request.action_id))
-    );
+    pendingActions = pendingGovernedActions;
+    correctionRequests = visibleCorrections.filter((request) => correctionTargetSpaceId(request) === activeSpace.id);
 
     const authorIds = [...new Set(posts.flatMap((post) => [
       post.author_id,
@@ -134,7 +146,6 @@ export default async function PersistedAppPage({ searchParams }) {
     }
   }
 
-  const pendingActions = agentActions.filter((action) => action.approval_status === 'pending');
   const openCorrections = correctionRequests.filter((request) => request.status === 'open');
   let safetyProfileMap = {};
   const safetyIds = [...excludedAuthorIds];
