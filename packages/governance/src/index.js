@@ -3,3 +3,4 @@ export { assertActionEvent, createActionEvent } from './action-event.js';
 export { createRateLimiter } from './rate-limit.js';
 export { loadCapabilityMatrix, policyForAgent, validateCapabilityMatrix } from './matrix.js';
 export { buildPermissionInspection } from './inspection.js';
+export { ALPHA_CAPABILITY_MATRIX } from './alpha-matrix.js';
