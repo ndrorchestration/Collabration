@@ -27,6 +27,22 @@ No one predicate substitutes for another.
 - Any model-provider integration is server-only, optional, and fail-closed when its secret/configuration is absent.
 - Evidence from DGAF or other NDR projects does not transfer into Intellectro.
 
+## Adopted governance direction
+
+Intellectro may reuse governance lessons from DGAF as design inputs only. ADR 0004 formalizes **pattern transfer without authority transfer**.
+
+The product-native target for consequential AI activity is:
+
+`request → typed capability → policy decision → approval/verifier when required → execution → durable receipt → challenge/correction`
+
+This alpha should strengthen the parts of that path already within scope: typed capabilities, policy decisions, human approval, governed-action lifecycle, provenance receipts, inspection, correction/appeal, and adversarial verification.
+
+Later authority expansion must remain independently gated by Intellectro evidence. Before any broader autonomous capability is released, Intellectro should require its own versioned policy change, adversarial permission tests, approval/reviewer semantics, rollback or revocation path, durable receipt behavior, runtime evidence, and explicit release decision.
+
+For selected high-impact actions, the component proposing an action should not be the sole authority validating that action when a separately scoped verifier or human reviewer is practical.
+
+DGAF freeze state, authorization, PASS/VERIFIED evidence, PDMAL findings, scientific conclusions, custody artifacts, and experiment results remain non-transferable.
+
 ## Architecture
 
 ### Social safety
@@ -58,6 +74,8 @@ Contextual Trust Comprehension remains the primary alpha metric. The instrument 
 ## Testing strategy
 
 Use RED → GREEN cycles for every repository behavior. Add structural migration tests for new RLS/RPC invariants, application-boundary tests for server actions and rendered controls, governance tests for alpha capability alignment, and adversarial tests for actor forgery, unsafe redirects, cross-Space approval, self-escalation, direct audit/provenance inserts, and block/mute visibility semantics.
+
+The next adversarial expansion should include replay/stale-approval behavior, provenance-receipt tampering assumptions, and fail-open dependency checks before any matching authority is enabled.
 
 Live browser Gate B and alpha human evaluation remain evidence-producing runtime tasks and cannot be replaced by structural tests.
 
