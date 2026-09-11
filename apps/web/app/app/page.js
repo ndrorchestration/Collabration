@@ -23,7 +23,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 const capabilityMatrix = loadCapabilityMatrix(
-  readFileSync(new URL('../../../../governance/capability-matrix.yaml', import.meta.url), 'utf8')
+  readFileSync(new URL('../../../../governance/capability-matrix.yaml', import.meta.url).pathname, 'utf8')
 );
 const permissionInspections = [
   buildPermissionInspection(capabilityMatrix, 'community_agent'),
