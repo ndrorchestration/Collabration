@@ -1,14 +1,16 @@
+import { resolveRuntimeMode } from './runtime-mode.js';
+
 export function buildDeploymentContract(env = process.env) {
-  const persistenceConfigured = Boolean(
-    env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  );
+  const runtime = resolveRuntimeMode(env);
 
   return Object.freeze({
     service: 'intellectro',
-    status: 'ok',
+    status: runtime.healthy ? 'ok' : 'misconfigured',
     commitSha: env.VERCEL_GIT_COMMIT_SHA || null,
     environment: env.VERCEL_ENV || 'local',
-    persistence: persistenceConfigured ? 'configured' : 'disabled',
+    runtimeMode: runtime.mode,
+    persistence: runtime.persistenceConfigured ? 'configured' : 'disabled',
+    configurationReason: runtime.reason,
     governance: Object.freeze({
       policyVersion: '0.1.0-alpha',
       defaultDecision: 'deny',
