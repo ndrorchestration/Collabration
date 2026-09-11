@@ -24,17 +24,23 @@ It also contains the first **persisted-alpha application boundary**:
 - a strictly chronological feed with no ranking model;
 - source-linked posts and contextual support/challenge/qualify/add-evidence interactions;
 - typed Human-authored, Source-linked, AI-assisted, and Community context cues;
+- reactions plus report, block, mute, unblock, and unmute controls;
 - Supabase SSR authentication with request-scoped clients, validated claims, PKCE callback handling, refresh-cookie propagation, and non-cacheable authenticated responses;
-- server actions that derive author/owner/approver identity from validated claims rather than client-supplied IDs;
+- server actions that derive author/owner/requester identity from validated claims rather than client-supplied IDs;
 - persisted profile, Space creation/join, post, source-linked post, comment, and contextual-response paths;
+- a permission inspector projected from the canonical capability matrix;
+- an RLS-bound governed action log and moderator review queue;
+- a narrow pending governed-action request/decision lifecycle that records human approval or rejection without executing a model or publishing output;
+- an approved-action provenance receipt boundary that preserves provenance without claiming truth;
+- an append-only correction/appeal workflow whose resolution does not rewrite the original post or governed action;
 - versioned Supabase migrations with RLS on every runtime table;
-- membership-gated social writes, atomic Space-owner creation, author-controlled direct source linkage, and moderator/admin-scoped approval insertion;
+- membership-gated social writes, atomic Space-owner creation, author-controlled direct source linkage, and Space-scoped moderator decisions;
 - no ordinary client insert path for `agent_actions` or `provenance_records`;
 - explicit Demo/fail-closed behavior when Supabase public configuration is absent.
 
-**Important evidence boundary:** the dedicated Intellectro Supabase project has the canonical migrations applied and its live schema, multi-user database/RLS boundary, function ACLs, and database-enforced atomicity cases have passed. End-to-end production browser auth/session behavior is still **NOT VERIFIED**, so overall live persistence remains **NOT VERIFIED** until Gate B passes. Production currently fails closed to Demo mode when the public Supabase runtime configuration is absent.
+**Important evidence boundary:** the dedicated Intellectro Supabase project has the canonical migrations applied and the current completion candidate's live database/RLS boundary, function ACLs, governed-action authorization, provenance authority, correction/appeal authority, and tested database-enforced failure cases have passed. Overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**. Production must continue to fail closed when its public Supabase runtime configuration is absent.
 
-Moderator review UI, a trusted governed writer for agent action/provenance records, correction/appeal workflow, live abuse testing, and model-provider execution remain planned work. Model-provider execution is not required to keep the repository safe or buildable; any future provider integration must remain server-only and fail closed when unconfigured.
+Repository-controlled moderator review, governed action/provenance boundaries, and correction/appeal are implemented. Still open are production runtime configuration, real browser Gate B, realistic multi-account abuse/rate-limit testing, mainline required-check protection, a real model-backed governed product loop, and the human Contextual Trust Comprehension evaluation. Any future model-provider integration must remain server-only and fail closed when unconfigured; repository completion does not authorize paid provider use or autonomous public posting.
 
 ## Run locally
 
