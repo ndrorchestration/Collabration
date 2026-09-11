@@ -26,6 +26,14 @@ test('people presentation keeps connection actions on server-action props', () =
   assert.match(people, /action=\{disconnectConnection\}[\s\S]*name="request_id"/);
 });
 
+test('People view exposes existing mute and block actions without accepting actor identity', () => {
+  assert.match(people, /\bmuteMember\b/);
+  assert.match(people, /\bblockMember\b/);
+  assert.match(people, /action=\{muteMember\}[\s\S]*name="target_user_id"/);
+  assert.match(people, /action=\{blockMember\}[\s\S]*name="target_user_id"/);
+  assert.match(page, /<PeoplePanel[\s\S]*muteMember=\{muteMember\}[\s\S]*blockMember=\{blockMember\}/);
+});
+
 test('relationship UX states that connection does not grant agent or governance authority', () => {
   assert.match(people, /Connections are human social relationships/i);
   assert.match(people, /do not grant agent permissions, Space roles, or governance authority/i);
