@@ -14,6 +14,9 @@ export function createProvenanceRecord({ sourceObjects, transformations = [], ge
 
 export function assertContentPassport(passport) {
   if (!passport || typeof passport !== 'object') throw new TypeError('content passport is required');
+  if (!passport.subject?.id || !passport.subject?.revisionId) {
+    throw new Error('content passport requires exact subject revision identity');
+  }
   if (!Array.isArray(passport.sourceRevisions) || passport.sourceRevisions.length === 0) {
     throw new Error('content passport requires at least one source revision');
   }
