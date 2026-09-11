@@ -7,6 +7,7 @@ import { createClient } from '../../lib/supabase/server';
 const RESPONSE_TYPES = new Set(['support', 'challenge', 'qualify', 'add_evidence', 'ask_question']);
 const SUPPORTED_REACTIONS = new Set(['like', 'useful', 'interesting']);
 const SUPPORTED_REPORT_REASONS = new Set(['spam', 'harassment', 'misleading', 'other']);
+const CONNECTION_DECISIONS = new Set(['accepted', 'declined', 'cancelled']);
 const REQUESTABLE_AGENT_CAPABILITIES = new Map([
   ['community_agent', new Set(['draft_public_content', 'publish_public_content'])],
   ['claim_agent', new Set(['draft_annotation', 'publish_annotation'])]
@@ -239,6 +240,29 @@ export async function unmuteMember(formData) {
   const { supabase, claims } = await authenticatedClient();
   const targetId = requiredId(formData, 'target_user_id');
   const { error } = await supabase.from('mutes').delete().eq('muter_id', claims.sub).eq('muted_id', targetId);
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function requestConnection(formData) {
+  const { supabase, claims } = await authenticatedClient();
+  const targetId = requiredId(formData, 'target_user_id');
+  assertDifferentUser(claims.sub, targetId);
+  const { error } = await supabase.rpc('request_connection', { p_recipient_id: targetId });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function decideConnectionRequest(formData) {
+  const { supabase } = await authenticatedClient();
+  const requestId = requiredId(formData, 'request_id');
+  const decision = requiredText(formData, 'decision', 20);
+  if (!CONNECTION_DECISIONS.has(decision)) throw new Error('Unsupported connection decision');
+
+  const { error } = await supabase.rpc('decide_connection_request', {
+    p_request_id: requestId,
+    p_decision: decision
+  });
   if (error) throw error;
   refreshApp();
 }
