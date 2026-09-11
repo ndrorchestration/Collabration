@@ -106,3 +106,36 @@ test('content passport is a typed versioned immutable snapshot', () => {
   assert.equal(passport.sourceRevisions[0].revisionId, 'source-a@r4');
   assert.equal(passport.responsibleActors[0].actorId, 'claim-agent-1');
 });
+
+test('passport currentness is current only when every bound source revision matches', () => {
+  assert.equal(typeof provenance.assessContentPassportCurrentness, 'function');
+  const passport = provenance.createContentPassport(validPassportInput());
+  assert.deepEqual(
+    provenance.assessContentPassportCurrentness(passport, [
+      { sourceId: 'source-a', revisionId: 'source-a@r4' },
+      { sourceId: 'source-b', revisionId: 'source-b@r1' }
+    ]),
+    { state: 'current', changedSourceIds: [], missingSourceIds: [] }
+  );
+});
+
+test('passport currentness reports known input revision drift', () => {
+  const passport = provenance.createContentPassport(validPassportInput());
+  assert.deepEqual(
+    provenance.assessContentPassportCurrentness(passport, [
+      { sourceId: 'source-a', revisionId: 'source-a@r4' },
+      { sourceId: 'source-b', revisionId: 'source-b@r2' }
+    ]),
+    { state: 'inputs_changed', changedSourceIds: ['source-b'], missingSourceIds: [] }
+  );
+});
+
+test('passport currentness is unknown when required current revision evidence is missing', () => {
+  const passport = provenance.createContentPassport(validPassportInput());
+  assert.deepEqual(
+    provenance.assessContentPassportCurrentness(passport, [
+      { sourceId: 'source-a', revisionId: 'source-a@r4' }
+    ]),
+    { state: 'unknown', changedSourceIds: [], missingSourceIds: ['source-b'] }
+  );
+});
