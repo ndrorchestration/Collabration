@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { buildDeploymentContract } from '../apps/web/lib/deployment-contract.js';
 
 test('deployment contract exposes only non-secret governed runtime state', () => {
@@ -31,4 +32,9 @@ test('deployment contract fails closed when persistence is not configured', () =
   assert.equal(contract.governance.autonomousPublicPosting, 'deny');
   assert.equal(contract.environment, 'local');
   assert.equal(contract.commitSha, null);
+});
+
+test('web workspace declares the governance package consumed by its runtime', async () => {
+  const webPackage = JSON.parse(await readFile(new URL('../apps/web/package.json', import.meta.url), 'utf8'));
+  assert.equal(webPackage.dependencies?.['@intellectro/governance'], '0.0.1-alpha');
 });
