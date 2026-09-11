@@ -107,6 +107,17 @@ test('content passport is a typed versioned immutable snapshot', () => {
   assert.equal(passport.responsibleActors[0].actorId, 'claim-agent-1');
 });
 
+test('content passport assertion requires exact kind and schema version', () => {
+  const passport = provenance.createContentPassport(validPassportInput());
+  const { kind, ...withoutKind } = passport;
+  assert.equal(kind, 'content_passport');
+  assert.throws(() => provenance.assertContentPassport(withoutKind), /content passport kind/i);
+  assert.throws(
+    () => provenance.assertContentPassport({ ...passport, schemaVersion: '0.2.0' }),
+    /schema version/i
+  );
+});
+
 test('passport currentness is current only when every bound source revision matches', () => {
   assert.equal(typeof provenance.assessContentPassportCurrentness, 'function');
   const passport = provenance.createContentPassport(validPassportInput());
