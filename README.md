@@ -6,7 +6,7 @@ The alpha thesis is simple: users should be able to participate in a familiar so
 
 ## Current implementation status
 
-The repository now contains the first executable governance foundation:
+The repository contains the executable governance foundation:
 
 - deny-by-default capability decisions;
 - accountable agent ownership validation;
@@ -16,21 +16,32 @@ The repository now contains the first executable governance foundation:
 - provenance records that preserve source and transformation history without claiming truth;
 - a bounded Community Agent planning contract;
 - a bounded Claim Agent draft contract;
-- dependency-light automated tests and CI.
+- automated tests and CI.
 
-The social application, Supabase runtime, moderation console, trust-chip UI, and model-provider integrations remain planned work.
+It now also contains a **demo-mode social vertical slice**:
+
+- one governed Space rendered in Next.js;
+- a strictly chronological feed with no ranking model;
+- source-linked posts and contextual support/challenge/qualify interactions;
+- typed Human-authored, Source-linked, AI-assisted, and Community context cues;
+- inspectable context that separates authorship, assistance, evidence, approval, and dispute state;
+- Supabase schema/RLS migrations for profiles, Spaces, posts, comments, reactions, claim responses, provenance, agent actions, approvals, reports, blocks, and mutes;
+- Supabase SSR/OTP authentication wiring that stays disabled in explicit Demo mode when public configuration is absent.
+
+Live Supabase persistence, persisted profile/membership/comment flows, moderator review tooling, trusted action-log persistence, and model-provider execution remain planned work. Structural RLS checks do not substitute for live multi-user Supabase verification.
 
 ## Run locally
 
 Requirements: Node.js 20 or newer.
 
 ```bash
-npm ci
+npm install
 npm run check
 npm test
+npm run dev:web
 ```
 
-No external runtime dependency is required for the governance-kernel test suite.
+The governance/domain tests require no production credentials. The web application builds without Supabase secrets and falls back to explicit Demo mode.
 
 ## Product promise
 
@@ -81,14 +92,18 @@ MVP proving path:
 ## Repository layout
 
 ```text
+apps/
+  web/                  Next.js governed social vertical slice
 agents/
   claim-agent/          bounded evidence-assistant contract
   community-agent/      bounded community-governance contract
 packages/
   governance/           capability, approval, rate-limit, and audit primitives
   provenance/           source/transformation provenance boundary
+  social-core/          social objects, chronological feed, trust context
+supabase/               versioned schema and RLS migrations
 governance/             machine-readable policy/schema artifacts
-docs/                   product, architecture, evaluation, and ADRs
+docs/                   product, architecture, evaluation, threat models, and ADRs
 .github/workflows/       automated verification
 ```
 
@@ -101,6 +116,7 @@ docs/                   product, architecture, evaluation, and ADRs
 - [`docs/agents.md`](docs/agents.md) — agent roles, permissions, prohibitions, and sequencing
 - [`docs/evaluation.md`](docs/evaluation.md) — alpha evaluation plan and Contextual Trust Comprehension metric
 - [`docs/mvp-roadmap.md`](docs/mvp-roadmap.md) — phased MVP backlog and deferred scope
+- [`docs/threat-model-social-slice.md`](docs/threat-model-social-slice.md) — vertical-slice threats, controls, and required live evidence
 - [`docs/research-context.md`](docs/research-context.md) — competitive/research context with evidence-status cautions
 - [`docs/history/strategic-evolution.md`](docs/history/strategic-evolution.md) — why the thesis moved from agent-native to governance-native
 - [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml) — machine-readable initial policy
