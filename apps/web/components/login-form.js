@@ -3,22 +3,38 @@
 import { useState } from 'react';
 import { createClient } from '../lib/supabase/client';
 
-export function LoginForm({ configured }) {
+function safeNext(value) {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return '/app';
+  return value;
+}
+
+export function LoginForm({ configured, next = '/app' }) {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+
   async function submit(event) {
     event.preventDefault();
     if (!configured) return;
-    setBusy(true); setMessage('');
+    setBusy(true);
+    setMessage('');
+
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+      const callback = new URL('/auth/callback', window.location.origin);
+      callback.searchParams.set('next', safeNext(next));
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: callback.toString() }
+      });
       setMessage(error ? error.message : 'Check your email for the sign-in link.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Unable to start sign-in.');
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
+
   return (
     <form className="login-form" onSubmit={submit}>
       <label htmlFor="email">Email</label>

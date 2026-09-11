@@ -1,5 +1,9 @@
 # MVP Roadmap
 
+## Evidence notation
+
+A checked repository item means the implementation exists and is covered by repository verification. It does **not** imply live Supabase behavior has been verified unless explicitly stated. The current live-database state is **NOT VERIFIED** until the isolated-project gate in [`supabase-live-verification.md`](supabase-live-verification.md) passes.
+
 ## Phase 0 — Repository and governance foundation
 
 - [x] Define principal/agent identity schema
@@ -12,22 +16,22 @@
 
 ## Phase 1 — Familiar social Space
 
-- [x] Create application shell (demo-mode web shell)
-- [ ] Add authentication (Supabase SSR/OTP boundary scaffolded; live project/session flow pending)
-- [ ] Add profiles (schema present; persisted profile flow pending)
-- [ ] Add Spaces/membership (schema + demo Space present; persisted membership flow pending)
-- [ ] Add posts and comments (schema + demo posts present; persisted composer/comments pending)
+- [x] Create application shell
+- [x] Add authentication runtime wiring (validated SSR claims, PKCE callback, refresh-cookie proxy; live project verification pending)
+- [x] Add profiles (persisted server-action path implemented; live RLS verification pending)
+- [x] Add Spaces/membership (atomic owner creation + join path implemented; live RLS verification pending)
+- [x] Add posts and comments (human/source-linked post + comment persistence paths implemented; live RLS verification pending)
 - [x] Add chronological feed
-- [ ] Add basic reactions (schema present; UI/persistence pending)
-- [ ] Add report, block, and mute (RLS-backed schema present; UI/persistence pending)
+- [ ] Add basic reactions (schema present; authenticated UI/persistence path pending)
+- [ ] Add report, block, and mute (RLS-backed schema present; authenticated UI/persistence paths pending)
 
 ## Phase 2 — Governance-native interaction
 
-- [x] Add source-linked post type
-- [x] Add support / challenge / qualify responses (demo interaction + domain/schema contract)
+- [x] Add source-linked post type and atomic persistence path
+- [x] Add support / challenge / qualify / add-evidence responses
 - [x] Add typed AI-assistance labels
 - [x] Add trust/context chips
-- [x] Add provenance records (domain + schema; trusted persistence writer still pending)
+- [x] Add provenance records (domain + schema; trusted provenance writer still pending)
 - [ ] Add permission inspector
 - [ ] Add action-log viewer
 - [ ] Add correction / appeal flow
@@ -36,12 +40,13 @@
 
 - [x] Community Agent in read/summarize/recommend mode
 - [x] Claim Agent in evidence-assistant mode
-- [ ] Human approval workflow for public agent outputs (kernel + schema boundary present; review/execution flow pending)
+- [ ] Human approval workflow for public agent outputs (kernel + moderator/admin RLS admission policy present; review/execution path pending)
 - [ ] Moderator review queue
 - [ ] Agent action/audit persistence (schema present; trusted server writer pending)
 
 ## Phase 4 — Alpha validation
 
+- [ ] Apply migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate
 - [ ] Run Contextual Trust Comprehension study
 - [ ] Measure governance burden
 - [ ] Evaluate summary faithfulness

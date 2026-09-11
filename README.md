@@ -18,30 +18,36 @@ The repository contains the executable governance foundation:
 - a bounded Claim Agent draft contract;
 - automated tests and CI.
 
-It now also contains a **demo-mode social vertical slice**:
+It also contains the first **persisted-alpha application boundary**:
 
-- one governed Space rendered in Next.js;
+- a Next.js governed social shell plus an authenticated `/app` runtime surface;
 - a strictly chronological feed with no ranking model;
-- source-linked posts and contextual support/challenge/qualify interactions;
+- source-linked posts and contextual support/challenge/qualify/add-evidence interactions;
 - typed Human-authored, Source-linked, AI-assisted, and Community context cues;
-- inspectable context that separates authorship, assistance, evidence, approval, and dispute state;
-- Supabase schema/RLS migrations for profiles, Spaces, posts, comments, reactions, claim responses, provenance, agent actions, approvals, reports, blocks, and mutes;
-- Supabase SSR/OTP authentication wiring that stays disabled in explicit Demo mode when public configuration is absent.
+- Supabase SSR authentication with request-scoped clients, validated claims, PKCE callback handling, refresh-cookie propagation, and non-cacheable authenticated responses;
+- server actions that derive author/owner/approver identity from validated claims rather than client-supplied IDs;
+- persisted profile, Space creation/join, post, source-linked post, comment, and contextual-response paths;
+- versioned Supabase migrations with RLS on every runtime table;
+- membership-gated social writes, atomic Space-owner creation, author-controlled direct source linkage, and moderator/admin-scoped approval insertion;
+- no ordinary client insert path for `agent_actions` or `provenance_records`;
+- explicit Demo/fail-closed behavior when Supabase public configuration is absent.
 
-Live Supabase persistence, persisted profile/membership/comment flows, moderator review tooling, trusted action-log persistence, and model-provider execution remain planned work. Structural RLS checks do not substitute for live multi-user Supabase verification.
+**Important evidence boundary:** the repository implementation and structural policy tests are complete for this wave, but the migrations have not yet been applied to an isolated Intellectro Supabase project. Multi-user live RLS behavior is therefore **NOT VERIFIED**. The only currently connected Supabase project belongs to another system and is intentionally untouched.
+
+Moderator review UI, a trusted server writer for agent action/provenance records, correction/appeal workflow, live abuse testing, and model-provider execution remain planned work.
 
 ## Run locally
 
-Requirements: Node.js 20 or newer.
+Requirements: Node.js 22 or newer.
 
 ```bash
-npm install
+npm ci
 npm run check
 npm test
 npm run dev:web
 ```
 
-The governance/domain tests require no production credentials. The web application builds without Supabase secrets and falls back to explicit Demo mode.
+The governance/domain tests require no production credentials. The web application builds without Supabase secrets and falls back to explicit Demo mode when the public Supabase URL and publishable key are absent.
 
 ## Product promise
 
@@ -93,7 +99,7 @@ MVP proving path:
 
 ```text
 apps/
-  web/                  Next.js governed social vertical slice
+  web/                  Next.js demo + authenticated persisted-alpha surface
 agents/
   claim-agent/          bounded evidence-assistant contract
   community-agent/      bounded community-governance contract
@@ -103,7 +109,7 @@ packages/
   social-core/          social objects, chronological feed, trust context
 supabase/               versioned schema and RLS migrations
 governance/             machine-readable policy/schema artifacts
-docs/                   product, architecture, evaluation, threat models, and ADRs
+docs/                   product, architecture, evaluation, threat models, verification plans, and ADRs
 .github/workflows/       automated verification
 ```
 
@@ -115,8 +121,9 @@ docs/                   product, architecture, evaluation, threat models, and AD
 - [`docs/governance-ux.md`](docs/governance-ux.md) — trust states, contextual disclosure, challenge flows, and progressive inspection
 - [`docs/agents.md`](docs/agents.md) — agent roles, permissions, prohibitions, and sequencing
 - [`docs/evaluation.md`](docs/evaluation.md) — alpha evaluation plan and Contextual Trust Comprehension metric
-- [`docs/mvp-roadmap.md`](docs/mvp-roadmap.md) — phased MVP backlog and deferred scope
+- [`docs/mvp-roadmap.md`](docs/mvp-roadmap.md) — phased MVP backlog and evidence state
 - [`docs/threat-model-social-slice.md`](docs/threat-model-social-slice.md) — vertical-slice threats, controls, and required live evidence
+- [`docs/supabase-live-verification.md`](docs/supabase-live-verification.md) — required live database/RLS verification gate
 - [`docs/research-context.md`](docs/research-context.md) — competitive/research context with evidence-status cautions
 - [`docs/history/strategic-evolution.md`](docs/history/strategic-evolution.md) — why the thesis moved from agent-native to governance-native
 - [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml) — machine-readable initial policy

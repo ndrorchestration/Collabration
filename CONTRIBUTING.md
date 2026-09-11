@@ -10,7 +10,7 @@ npm run check
 npm test
 ```
 
-Node.js 20 or newer is required.
+Node.js 22 or newer is required. CI verifies maintained Node 22 and Node 24 lines.
 
 ## Pull requests
 
@@ -33,3 +33,5 @@ Behavior changes use red-green-refactor: write a failing test, confirm the expec
 ## Data and secrets
 
 Do not commit production secrets, access tokens, private prompts containing operational secrets, private user data, or production abuse-detection thresholds.
+
+Repository CI and structural RLS tests do not authorize use of real user data. Live database claims require the isolated Supabase verification gate in `docs/supabase-live-verification.md`.
