@@ -48,6 +48,11 @@ test('invitee-only decision path rechecks block state and atomically creates mem
   assert.match(sql, /where id = p_invitation_id and status = 'pending'/i);
 });
 
+test('acceptance rejects a stale invitation when the invitee already became a Space member', () => {
+  const sql = read(migrationPath);
+  assert.match(sql, /if exists \([\s\S]*from public\.space_memberships sm[\s\S]*sm\.space_id = v_space_id[\s\S]*sm\.user_id = v_invitee_id[\s\S]*\) then[\s\S]*raise exception 'user is already a Space member'/i);
+});
+
 test('blocking terminalizes pending invitations without rewriting accepted membership', () => {
   const sql = read(migrationPath);
   assert.match(sql, /create or replace function public\.block_user\(p_blocked_id uuid\)/i);
