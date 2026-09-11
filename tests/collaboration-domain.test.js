@@ -7,7 +7,7 @@ import {
   transitionProjectTask,
   createProjectArtifact,
   createProjectOutcome
-} from '../packages/social-core/src/index.js';
+} from '../packages/social-core/src/collaboration.js';
 
 const t0 = '2026-09-11T10:45:00Z';
 const t1 = '2026-09-11T10:46:00Z';
