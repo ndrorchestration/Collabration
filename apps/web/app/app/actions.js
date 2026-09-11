@@ -29,6 +29,14 @@ function requiredId(formData, key) {
   return requiredText(formData, key, 80);
 }
 
+function optionalJsonArray(formData, key, maxLength = 10000) {
+  const raw = optionalText(formData, key, maxLength);
+  if (!raw) return [];
+  const value = JSON.parse(raw);
+  if (!Array.isArray(value)) throw new Error(`${key} must be a JSON array`);
+  return value;
+}
+
 function validateSourceUrl(value) {
   if (!value) return '';
   const parsed = new URL(value);
@@ -264,6 +272,23 @@ export async function decideAgentAction(formData) {
     p_action_id: actionId,
     p_decision: decision,
     p_note: note
+  });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function recordApprovedActionProvenance(formData) {
+  const { supabase } = await authenticatedClient();
+  const actionId = requiredId(formData, 'action_id');
+  const postId = optionalText(formData, 'post_id', 80) || null;
+  const sourceRefs = optionalJsonArray(formData, 'source_refs');
+  const transformations = optionalJsonArray(formData, 'transformations');
+
+  const { error } = await supabase.rpc('record_approved_action_provenance', {
+    p_action_id: actionId,
+    p_post_id: postId,
+    p_source_refs: sourceRefs,
+    p_transformations: transformations
   });
   if (error) throw error;
   refreshApp();
