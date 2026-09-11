@@ -17,3 +17,14 @@ test('exceptional AI evidence and review states remain visible', () => {
   assert.match(signals, /Awaiting approval/);
   assert.match(signals, /disputed/);
 });
+
+test('persisted post presentation uses exceptional states and keeps detailed context reachable', () => {
+  const post = read('apps/web/components/persisted-post-card.js');
+  assert.doesNotMatch(post, />Human-authored</);
+  assert.match(post, /Source-linked/);
+  assert.match(post, /AI/);
+  assert.match(post, /Human approved/);
+  assert.match(post, /Awaiting approval/);
+  assert.match(post, /<ContextDrawer/);
+  assert.match(post, /Provenance describes origin and transformation/);
+});
