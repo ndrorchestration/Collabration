@@ -2,7 +2,21 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSupabasePublicConfig } from '../../lib/supabase/env';
 import { createClient } from '../../lib/supabase/server';
-import { createClaimResponse, createComment, createPost, createSpace, joinSpace, upsertProfile } from './actions';
+import {
+  blockMember,
+  createClaimResponse,
+  createComment,
+  createPost,
+  createSpace,
+  joinSpace,
+  muteMember,
+  removeReaction,
+  reportPost,
+  setReaction,
+  unblockMember,
+  unmuteMember,
+  upsertProfile
+} from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +26,16 @@ function byId(rows = []) {
 
 function formatDate(value) {
   return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+}
+
+function filterVisibleDiscussion(rows, excludedAuthorIds) {
+  return rows
+    .filter((post) => !excludedAuthorIds.has(post.author_id))
+    .map((post) => ({
+      ...post,
+      comments: (post.comments ?? []).filter((comment) => !excludedAuthorIds.has(comment.author_id)),
+      claim_responses: (post.claim_responses ?? []).filter((response) => !excludedAuthorIds.has(response.author_id))
+    }));
 }
 
 export default async function PersistedAppPage({ searchParams }) {
@@ -36,12 +60,17 @@ export default async function PersistedAppPage({ searchParams }) {
 
   const userId = claims.sub;
   const params = await searchParams;
-  const [{ data: profile }, { data: memberships = [] }, { data: spaces = [] }] = await Promise.all([
+  const [{ data: profile }, { data: memberships = [] }, { data: spaces = [] }, { data: blocks = [] }, { data: mutes = [] }] = await Promise.all([
     supabase.from('profiles').select('id,handle,display_name,bio').eq('id', userId).maybeSingle(),
     supabase.from('space_memberships').select('space_id,role,created_at').eq('user_id', userId).order('created_at', { ascending: true }),
-    supabase.from('spaces').select('id,slug,name,description,created_at').order('created_at', { ascending: true })
+    supabase.from('spaces').select('id,slug,name,description,created_at').order('created_at', { ascending: true }),
+    supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
+    supabase.from('mutes').select('muted_id').eq('muter_id', userId)
   ]);
 
+  const blockedIds = new Set(blocks.map((row) => row.blocked_id));
+  const mutedIds = new Set(mutes.map((row) => row.muted_id));
+  const excludedAuthorIds = new Set([...blockedIds, ...mutedIds]);
   const spaceMap = byId(spaces);
   const membershipIds = new Set(memberships.map((membership) => membership.space_id));
   const requestedSpace = typeof params?.space === 'string' ? params.space : null;
@@ -54,17 +83,28 @@ export default async function PersistedAppPage({ searchParams }) {
   if (activeSpace) {
     const { data: persistedPosts = [] } = await supabase
       .from('posts')
-      .select('id,author_id,body,kind,ai_assisted,ai_assistance_type,agent_id,human_approved,created_at,post_sources(source_id,sources(id,url,title,publisher)),comments(id,author_id,body,created_at),claim_responses(id,author_id,response_type,body,created_at)')
+      .select('id,author_id,body,kind,ai_assisted,ai_assistance_type,agent_id,human_approved,created_at,post_sources(source_id,sources(id,url,title,publisher)),comments(id,author_id,body,created_at),claim_responses(id,author_id,response_type,body,created_at),reactions(user_id,reaction)')
       .eq('space_id', activeSpace.id)
       .order('created_at', { ascending: false })
       .limit(50);
-    posts = persistedPosts;
+    posts = filterVisibleDiscussion(persistedPosts, excludedAuthorIds);
 
-    const authorIds = [...new Set(posts.flatMap((post) => [post.author_id, ...(post.comments ?? []).map((comment) => comment.author_id), ...(post.claim_responses ?? []).map((response) => response.author_id)]))];
+    const authorIds = [...new Set(posts.flatMap((post) => [
+      post.author_id,
+      ...(post.comments ?? []).map((comment) => comment.author_id),
+      ...(post.claim_responses ?? []).map((response) => response.author_id)
+    ]))];
     if (authorIds.length) {
       const { data: authors = [] } = await supabase.from('profiles').select('id,handle,display_name').in('id', authorIds);
       authorMap = byId(authors);
     }
+  }
+
+  let safetyProfileMap = {};
+  const safetyIds = [...excludedAuthorIds];
+  if (safetyIds.length) {
+    const { data: safetyProfiles = [] } = await supabase.from('profiles').select('id,handle,display_name').in('id', safetyIds);
+    safetyProfileMap = byId(safetyProfiles);
   }
 
   return (
@@ -126,6 +166,8 @@ export default async function PersistedAppPage({ searchParams }) {
 
         {posts.map((post) => {
           const author = authorMap[post.author_id];
+          const reactionCounts = (post.reactions ?? []).reduce((counts, row) => ({ ...counts, [row.reaction]: (counts[row.reaction] ?? 0) + 1 }), {});
+          const ownReactions = new Set((post.reactions ?? []).filter((row) => row.user_id === userId).map((row) => row.reaction));
           return (
             <article className="post-card" key={post.id}>
               <div className="post-head"><div><strong>{author?.display_name ?? 'Member'}</strong><small> @{author?.handle ?? post.author_id.slice(0, 8)} · {formatDate(post.created_at)}</small></div></div>
@@ -133,11 +175,17 @@ export default async function PersistedAppPage({ searchParams }) {
               <div className="trust-row"><span className="trust-chip">Human-authored</span>{post.kind === 'source_linked' && <span className="trust-chip">Source-linked</span>}{post.ai_assisted && <span className="trust-chip">AI-assisted</span>}</div>
               {(post.post_sources ?? []).map((link) => link.sources && <p className="context-note" key={link.source_id}>Source: <a href={link.sources.url} target="_blank" rel="noreferrer">{link.sources.title || link.sources.url}</a></p>)}
 
+              <div className="trust-row">
+                {['like', 'useful', 'interesting'].map((reaction) => <form action={ownReactions.has(reaction) ? removeReaction : setReaction} key={reaction}><input type="hidden" name="post_id" value={post.id} /><input type="hidden" name="reaction" value={reaction} /><button type="submit" className="secondary-button">{ownReactions.has(reaction) ? 'Remove ' : ''}{reaction} · {reactionCounts[reaction] ?? 0}</button></form>)}
+              </div>
+
               {(post.comments ?? []).map((comment) => <p className="context-note" key={comment.id}><strong>{authorMap[comment.author_id]?.display_name ?? 'Member'}:</strong> {comment.body}</p>)}
               {(post.claim_responses ?? []).map((response) => <p className="context-note" key={response.id}><strong>{response.response_type.replace('_', ' ')} · {authorMap[response.author_id]?.display_name ?? 'Member'}:</strong> {response.body}</p>)}
 
               <details><summary>Comment</summary><form action={createComment} className="login-form"><input type="hidden" name="post_id" value={post.id} /><textarea name="body" required /><button type="submit">Add comment</button></form></details>
               <details><summary>Respond with context</summary><form action={createClaimResponse} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="response_type" defaultValue="challenge"><option value="support">Support</option><option value="challenge">Challenge</option><option value="qualify">Qualify</option><option value="add_evidence">Add evidence</option><option value="ask_question">Ask question</option></select><textarea name="body" required /><button type="submit">Add contextual response</button></form></details>
+              <details><summary>Report post</summary><form action={reportPost} className="login-form"><input type="hidden" name="post_id" value={post.id} /><select name="reason" defaultValue="misleading"><option value="spam">Spam</option><option value="harassment">Harassment</option><option value="misleading">Misleading</option><option value="other">Other</option></select><button type="submit">Submit report</button></form></details>
+              {post.author_id !== userId && <div className="trust-row"><form action={muteMember}><input type="hidden" name="target_user_id" value={post.author_id} /><button type="submit" className="secondary-button">Mute author</button></form><form action={blockMember}><input type="hidden" name="target_user_id" value={post.author_id} /><button type="submit" className="secondary-button">Block author</button></form></div>}
             </article>
           );
         })}
@@ -146,6 +194,7 @@ export default async function PersistedAppPage({ searchParams }) {
       <aside className="right-rail">
         <section className="side-card"><p className="eyebrow">Persistence boundary</p><h2>Identity comes from validated claims.</h2><p>Forms never choose their own author or approver identity. RLS decides whether the authenticated user may write.</p></section>
         <section className="side-card"><p className="eyebrow">Agent authority</p><div className="metric"><strong>0</strong><span>ordinary client insert policies for agent actions</span></div><div className="metric"><strong>0</strong><span>autonomous public posting capabilities</span></div></section>
+        <section className="side-card"><p className="eyebrow">Safety controls</p><p>Mute hides a person's activity from your feed. Block also hides it; neither silently bans or deletes that person's content for anyone else.</p>{safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}{safetyIds.map((id) => { const member = safetyProfileMap[id]; return <div key={id} className="context-note"><strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>{mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}{blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}</div>; })}</section>
       </aside>
     </main>
   );
