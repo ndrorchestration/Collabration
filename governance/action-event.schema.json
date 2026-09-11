@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intellectro.example/schemas/action-event.schema.json",
+  "title": "Intellectro Governed Action Event",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "event_type",
+    "action_id",
+    "actor_id",
+    "owner_id",
+    "action",
+    "scope",
+    "policy_version",
+    "capabilities_used",
+    "approval_status",
+    "timestamp"
+  ],
+  "properties": {
+    "event_type": { "const": "agent_action" },
+    "action_id": { "type": "string", "minLength": 1 },
+    "actor_id": { "type": "string", "minLength": 1 },
+    "owner_id": { "type": "string", "minLength": 1 },
+    "action": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "minLength": 1 },
+    "target_id": { "type": ["string", "null"] },
+    "policy_version": { "type": "string", "minLength": 1 },
+    "capabilities_used": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "approval_status": {
+      "enum": ["not_required", "pending", "approved", "rejected"]
+    },
+    "approver_id": { "type": ["string", "null"] },
+    "input_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "output_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "provenance_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "rate_limit_decision": {
+      "enum": ["allowed", "denied", "not_applicable"]
+    },
+    "timestamp": { "type": "string", "format": "date-time" }
+  }
+}
