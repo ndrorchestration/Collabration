@@ -14,6 +14,7 @@ The repository contains the executable governance foundation:
 - governed rate limiting with denial audit events;
 - immutable governed action events;
 - provenance records that preserve source and transformation history without claiming truth;
+- a revision-aware Content Passport `0.1.0-alpha` package contract that binds subject/source revisions, ordered transformations, accountable human/agent actors, immutable snapshots, and fail-closed currentness states without claiming truth or correctness;
 - a bounded Community Agent planning contract;
 - a bounded Claim Agent draft contract;
 - automated tests and CI.
@@ -25,6 +26,9 @@ It also contains the first **persisted-alpha application boundary**:
 - source-linked posts and contextual support/challenge/qualify/add-evidence interactions;
 - typed Human-authored, Source-linked, AI-assisted, and Community context cues;
 - reactions plus report, block, mute, unblock, and unmute controls;
+- person-to-person connection requests with explicit pending/accepted/declined/cancelled/disconnected/blocked lifecycle, including accept, decline, cancel, and disconnect UI paths;
+- bilateral block precedence that is designed to hide blocked profiles/relationship rows at the database boundary and terminate pending/accepted connections without deleting another person's content;
+- explicit UX language that a human connection grants no agent permission, Space role, or governance authority;
 - Supabase SSR authentication with request-scoped clients, validated claims, PKCE callback handling, refresh-cookie propagation, and non-cacheable authenticated responses;
 - server actions that derive author/owner/requester identity from validated claims rather than client-supplied IDs;
 - persisted profile, Space creation/join, post, source-linked post, comment, and contextual-response paths;
@@ -33,14 +37,14 @@ It also contains the first **persisted-alpha application boundary**:
 - a narrow pending governed-action request/decision lifecycle that records human approval or rejection without executing a model or publishing output;
 - an approved-action provenance receipt boundary that preserves provenance without claiming truth;
 - an append-only correction/appeal workflow whose resolution does not rewrite the original post or governed action;
-- versioned Supabase migrations with RLS on every runtime table;
+- versioned Supabase migrations with RLS on every admitted runtime table and repository checks for the connection-relationship candidate;
 - membership-gated social writes, atomic Space-owner creation, author-controlled direct source linkage, and Space-scoped moderator decisions;
 - no ordinary client insert path for `agent_actions` or `provenance_records`;
 - explicit Demo/fail-closed behavior when Supabase public configuration is absent.
 
-**Important evidence boundary:** the dedicated Intellectro Supabase project has the canonical migrations applied and the current completion candidate's live database/RLS boundary, function ACLs, governed-action authorization, provenance authority, correction/appeal authority, and tested database-enforced failure cases have passed. Overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**. Production must continue to fail closed when its public Supabase runtime configuration is absent.
+**Important evidence boundary:** the dedicated Intellectro Supabase project has the pre-relationship canonical migrations applied and its admitted database/RLS boundary, function ACLs, governed-action authorization, provenance authority, correction/appeal authority, and tested database-enforced failure cases have passed. The newer connection-relationship migration is **repository-verified only** until it is separately applied and live-probed on that dedicated project. Overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**. Production must continue to fail closed when its public Supabase runtime configuration is absent.
 
-Repository-controlled moderator review, governed action/provenance boundaries, and correction/appeal are implemented. Still open are production runtime configuration, real browser Gate B, realistic multi-account abuse/rate-limit testing, mainline required-check protection, a real model-backed governed product loop, and the human Contextual Trust Comprehension evaluation. Any future model-provider integration must remain server-only and fail closed when unconfigured; repository completion does not authorize paid provider use or autonomous public posting.
+Repository-controlled moderator review, governed action/provenance boundaries, correction/appeal, Content Passport semantics, and the connection relationship candidate are implemented. Still open are live admission of the relationship migration, production runtime configuration, real browser Gate B, realistic multi-account abuse/rate-limit testing, mainline required-check protection, a real model-backed governed product loop, and the human Contextual Trust Comprehension evaluation. Any future model-provider integration must remain server-only and fail closed when unconfigured; repository completion does not authorize paid provider use or autonomous public posting.
 
 ## Run locally
 
@@ -59,8 +63,8 @@ The governance/domain tests require no production credentials. The web applicati
 
 Intellectro aims to be:
 
-- **Socially familiar** — profiles, Spaces, posts, comments, reactions, and a chronological feed.
-- **Epistemically inspectable** — sources, claims, uncertainty, disputes, and corrections can be examined when relevant.
+- **Socially familiar** — profiles, human connections, Spaces, posts, comments, reactions, and a chronological feed.
+- **Epistemically inspectable** — sources, claims, uncertainty, disputes, corrections, and revision/currentness context can be examined when relevant.
 - **Agentically accountable** — agent identity, ownership, permissions, approvals, rate limits, and action history are visible and enforceable.
 - **Community-governed** — AI supports human communities under explicit policies rather than silently becoming the authority.
 
@@ -68,7 +72,8 @@ Intellectro aims to be:
 
 - One attractive social Space
 - One chronological feed
-- Human profiles, posts, and comments
+- Human profiles and explicit connection relationships
+- Human posts and comments
 - Source-linked posts
 - Support / challenge / qualify interactions
 - One Community Agent
@@ -77,7 +82,7 @@ Intellectro aims to be:
 - Human approval for public agent output
 - Rate-limited automation
 - Visible trust/context cues
-- Provenance records
+- Provenance records and Content Passport contract semantics
 - Inspectable action log
 
 ## Governance principles
@@ -92,6 +97,7 @@ Intellectro aims to be:
 8. Agents cannot expand their own permissions.
 9. Provenance establishes origin and transformation history; it does not by itself establish truth.
 10. Governance should appear when trust matters, not burden ordinary human expression.
+11. Human social relationships do not silently grant agent permissions, Space roles, or governance authority.
 
 ## Governance evolution direction
 
@@ -107,11 +113,11 @@ See [`ADR 0004 — Pattern transfer without authority transfer`](docs/adr/0004-p
 
 ## Core loop
 
-`post → inspect → discuss → coordinate → produce outcome`
+`connect → Space → discuss → inspect → coordinate → produce outcome`
 
 MVP proving path:
 
-`Human joins Space → posts a source-linked claim → Claim Agent analyzes it → another human challenges or qualifies the claim → Community Agent summarizes the disagreement → moderator approves the summary → provenance and action records are preserved`
+`Human connects with collaborator → joins shared Space → posts a source-linked claim → Claim Agent analyzes it → another human challenges or qualifies the claim → Community Agent summarizes the disagreement → moderator approves the summary → provenance and action records are preserved`
 
 ## Repository layout
 
@@ -123,8 +129,8 @@ agents/
   community-agent/      bounded community-governance contract
 packages/
   governance/           capability, approval, rate-limit, and audit primitives
-  provenance/           source/transformation provenance boundary
-  social-core/          social objects, chronological feed, trust context
+  provenance/           provenance + revision-aware Content Passport contracts
+  social-core/          social objects, relationship lifecycle, chronological feed, trust context
 supabase/               versioned schema and RLS migrations
 governance/             machine-readable policy/schema artifacts
 docs/                   product, architecture, evaluation, threat models, verification plans, and ADRs
