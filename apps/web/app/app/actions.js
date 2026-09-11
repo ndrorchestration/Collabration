@@ -7,6 +7,10 @@ import { createClient } from '../../lib/supabase/server';
 const RESPONSE_TYPES = new Set(['support', 'challenge', 'qualify', 'add_evidence', 'ask_question']);
 const SUPPORTED_REACTIONS = new Set(['like', 'useful', 'interesting']);
 const SUPPORTED_REPORT_REASONS = new Set(['spam', 'harassment', 'misleading', 'other']);
+const REQUESTABLE_AGENT_CAPABILITIES = new Map([
+  ['community_agent', new Set(['draft_public_content', 'publish_public_content'])],
+  ['claim_agent', new Set(['draft_annotation', 'publish_annotation'])]
+]);
 
 function requiredText(formData, key, maxLength) {
   const value = String(formData.get(key) ?? '').trim();
@@ -231,18 +235,35 @@ export async function unmuteMember(formData) {
   refreshApp();
 }
 
-export async function approveAction(formData) {
-  const { supabase, claims } = await authenticatedClient();
+export async function requestAgentAction(formData) {
+  const { supabase } = await authenticatedClient();
+  const spaceId = requiredId(formData, 'space_id');
+  const agentId = requiredText(formData, 'agent_id', 80);
+  const capability = requiredText(formData, 'capability', 120);
+  const allowed = REQUESTABLE_AGENT_CAPABILITIES.get(agentId);
+  if (!allowed?.has(capability)) throw new Error('Unsupported governed agent request');
+
+  const { error } = await supabase.rpc('request_governed_agent_action', {
+    p_space_id: spaceId,
+    p_agent_id: agentId,
+    p_capability: capability,
+    p_input_refs: []
+  });
+  if (error) throw error;
+  refreshApp();
+}
+
+export async function decideAgentAction(formData) {
+  const { supabase } = await authenticatedClient();
   const actionId = requiredId(formData, 'action_id');
   const decision = requiredText(formData, 'decision', 20);
   const note = optionalText(formData, 'note', 1000);
   if (!['approved', 'rejected'].includes(decision)) throw new Error('Invalid approval decision');
 
-  const { error } = await supabase.from('approval_records').insert({
-    action_id: actionId,
-    approver_id: claims.sub,
-    decision,
-    note
+  const { error } = await supabase.rpc('decide_governed_agent_action', {
+    p_action_id: actionId,
+    p_decision: decision,
+    p_note: note
   });
   if (error) throw error;
   refreshApp();
