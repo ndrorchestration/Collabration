@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { buildPermissionInspection, loadCapabilityMatrix } from '../../../../packages/governance/src/index.js';
 import { getSupabasePublicConfig } from '../../lib/supabase/env';
 import { createClient } from '../../lib/supabase/server';
 import {
@@ -19,6 +21,14 @@ import {
 } from './actions';
 
 export const dynamic = 'force-dynamic';
+
+const capabilityMatrix = loadCapabilityMatrix(
+  readFileSync(new URL('../../../../governance/capability-matrix.yaml', import.meta.url), 'utf8')
+);
+const permissionInspections = [
+  buildPermissionInspection(capabilityMatrix, 'community_agent'),
+  buildPermissionInspection(capabilityMatrix, 'claim_agent')
+];
 
 function byId(rows = []) {
   return Object.fromEntries(rows.map((row) => [row.id, row]));
@@ -80,14 +90,24 @@ export default async function PersistedAppPage({ searchParams }) {
 
   let posts = [];
   let authorMap = {};
+  let agentActions = [];
   if (activeSpace) {
-    const { data: persistedPosts = [] } = await supabase
-      .from('posts')
-      .select('id,author_id,body,kind,ai_assisted,ai_assistance_type,agent_id,human_approved,created_at,post_sources(source_id,sources(id,url,title,publisher)),comments(id,author_id,body,created_at),claim_responses(id,author_id,response_type,body,created_at),reactions(user_id,reaction)')
-      .eq('space_id', activeSpace.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const [{ data: persistedPosts = [] }, { data: governedActions = [] }] = await Promise.all([
+      supabase
+        .from('posts')
+        .select('id,author_id,body,kind,ai_assisted,ai_assistance_type,agent_id,human_approved,created_at,post_sources(source_id,sources(id,url,title,publisher)),comments(id,author_id,body,created_at),claim_responses(id,author_id,response_type,body,created_at),reactions(user_id,reaction)')
+        .eq('space_id', activeSpace.id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('agent_actions')
+        .select('id,agent_id,owner_id,action,capability,policy_version,approval_status,created_at,approval_records(id,approver_id,decision,note,created_at)')
+        .eq('space_id', activeSpace.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+    ]);
     posts = filterVisibleDiscussion(persistedPosts, excludedAuthorIds);
+    agentActions = governedActions;
 
     const authorIds = [...new Set(posts.flatMap((post) => [
       post.author_id,
@@ -194,6 +214,17 @@ export default async function PersistedAppPage({ searchParams }) {
       <aside className="right-rail">
         <section className="side-card"><p className="eyebrow">Persistence boundary</p><h2>Identity comes from validated claims.</h2><p>Forms never choose their own author or approver identity. RLS decides whether the authenticated user may write.</p></section>
         <section className="side-card"><p className="eyebrow">Agent authority</p><div className="metric"><strong>0</strong><span>ordinary client insert policies for agent actions</span></div><div className="metric"><strong>0</strong><span>autonomous public posting capabilities</span></div></section>
+        <details className="side-card">
+          <summary>Permission inspector</summary>
+          <p className="context-note">Permission does not mean an action occurred. Unknown capabilities default to deny.</p>
+          {permissionInspections.map((inspection) => <div key={inspection.agentType}><p><strong>{inspection.agentType.replace('_', ' ')}</strong> · policy {inspection.version}</p>{inspection.capabilities.map((item) => <p className="context-note" key={item.capability}>{item.capability.replaceAll('_', ' ')} · <strong>{item.decision}</strong></p>)}</div>)}
+        </details>
+        <details className="side-card">
+          <summary>Governed action log · {agentActions.length}</summary>
+          <p className="context-note">This view is read-only and constrained by database RLS.</p>
+          {agentActions.length === 0 && <p className="context-note">No governed agent actions are visible for this Space.</p>}
+          {agentActions.map((action) => <div className="context-note" key={action.id}><strong>{action.agent_id}</strong> · {action.capability} · {action.approval_status}<br />policy {action.policy_version} · {formatDate(action.created_at)}{(action.approval_records ?? []).map((approval) => <span key={approval.id}><br />human decision: {approval.decision}</span>)}</div>)}
+        </details>
         <section className="side-card"><p className="eyebrow">Safety controls</p><p>Mute hides a person's activity from your feed. Block also hides it; neither silently bans or deletes that person's content for anyone else.</p>{safetyIds.length === 0 && <p className="context-note">No muted or blocked members.</p>}{safetyIds.map((id) => { const member = safetyProfileMap[id]; return <div key={id} className="context-note"><strong>{member?.display_name ?? member?.handle ?? id.slice(0, 8)}</strong>{mutedIds.has(id) && <form action={unmuteMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unmute</button></form>}{blockedIds.has(id) && <form action={unblockMember}><input type="hidden" name="target_user_id" value={id} /><button type="submit" className="secondary-button">Unblock</button></form>}</div>; })}</section>
       </aside>
     </main>
