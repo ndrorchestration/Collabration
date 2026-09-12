@@ -14,6 +14,7 @@ test('governed model execution schema is append-only and replay resistant', () =
   assert.match(sql, /status text not null[^;]+current[^;]+superseded[^;]+published/is);
   assert.match(sql, /create table public\.agent_execution_receipts/i);
   assert.match(sql, /execution_action_id uuid not null unique/i);
+  assert.match(sql, /claimed_by uuid not null/i);
   assert.match(sql, /running[^;]+succeeded[^;]+failed/is);
   assert.match(sql, /create table public\.agent_publications/i);
   assert.match(sql, /publication_action_id uuid not null unique/i);
@@ -26,19 +27,26 @@ test('ordinary browser roles cannot write execution artifacts directly', () => {
   }
   assert.doesNotMatch(sql, /create policy[^;]+agent_drafts[^;]+for insert[^;]+to authenticated/is);
   assert.doesNotMatch(sql, /create policy[^;]+agent_execution_receipts[^;]+for insert[^;]+to authenticated/is);
+  assert.doesNotMatch(sql, /create policy[^;]+agent_publications[^;]+for insert[^;]+to authenticated/is);
 });
 
-test('RPCs are authenticated-only and fail closed', () => {
-  for (const fn of [
-    'claim_approved_agent_execution',
-    'complete_agent_execution_success',
-    'complete_agent_execution_failure',
-    'request_agent_draft_publication',
-    'publish_approved_agent_draft'
+test('execution claim and finalizers are server-only while human publication RPCs remain authenticated', () => {
+  for (const signature of [
+    'public.claim_approved_agent_execution(uuid,uuid,text,text)',
+    'public.complete_agent_execution_success(uuid,text,text,text,jsonb,uuid)',
+    'public.complete_agent_execution_failure(uuid,text)'
   ]) {
-    assert.match(sql, new RegExp(`revoke execute on function public\\.${fn}`, 'i'));
-    assert.match(sql, new RegExp(`grant execute on function public\\.${fn}.*to authenticated`, 'is'));
+    assert.match(sql, new RegExp(`revoke execute on function ${signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} from authenticated`, 'i'));
+    assert.match(sql, new RegExp(`grant execute on function ${signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} to service_role`, 'i'));
   }
+  for (const signature of [
+    'public.request_agent_draft_publication(uuid)',
+    'public.publish_approved_agent_draft(uuid)'
+  ]) {
+    assert.match(sql, new RegExp(`revoke execute on function ${signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} from anon`, 'i'));
+    assert.match(sql, new RegExp(`grant execute on function ${signature.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} to authenticated`, 'i'));
+  }
+  assert.match(sql, /p_actor_id uuid/i);
   assert.match(sql, /approval_status\s*<>\s*'approved'/i);
   assert.match(sql, /policy_version\s*<>\s*'0\.1\.0-alpha'/i);
   assert.match(sql, /content_sha256/i);
