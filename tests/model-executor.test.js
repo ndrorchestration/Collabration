@@ -34,7 +34,14 @@ test('executor claims before provider and finalizes exactly one success', async 
   const calls = [];
   const result = await executeClaimedDraft({
     context: CONTEXT,
-    provider: fixtureProvider(),
+    provider: {
+      kind: 'fixture',
+      async generateDraft(input) {
+        calls.push('provider');
+        assert.equal(input.executionIdempotencyKey, 'receipt-1');
+        return fixtureProvider().generateDraft(input);
+      }
+    },
     claimExecution: async ({ inputSha256, providerKind }) => {
       calls.push('claim');
       assert.match(inputSha256, /^[0-9a-f]{64}$/);
@@ -50,7 +57,6 @@ test('executor claims before provider and finalizes exactly one success', async 
     },
     finalizeFailure: async () => calls.push('failure')
   });
-  calls.splice(1, 0, 'provider');
   assert.deepEqual(calls, ['claim', 'provider', 'success']);
   assert.equal(result.draftId, 'draft-1');
 });
