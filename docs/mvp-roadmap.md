@@ -2,7 +2,7 @@
 
 ## Evidence notation
 
-A checked repository item means the implementation exists and is covered by repository verification. Live-state claims are called out separately. The dedicated Intellectro Supabase project has passed schema admission, the original multi-user database/RLS verification, the governed-alpha candidate's targeted authority probes, and PR #16's relationship/RLS/block-precedence admission matrix. Overall production persistence remains **NOT VERIFIED** until the browser OTP/PKCE/session Gate B passes.
+A checked repository item means the implementation exists and is covered by repository verification. Live-state claims are called out separately. The dedicated Intellectro Supabase project has passed schema admission, the original multi-user database/RLS verification, the governed-alpha candidate's targeted authority probes, PR #16's relationship/RLS/block-precedence admission matrix, and PR #24's Space-invitation/join-policy live admission matrix. Overall production persistence remains **NOT VERIFIED** until the browser OTP/PKCE/session Gate B passes.
 
 PR #9 established the accepted governed/persisted-alpha repository base. Post-#9 work must preserve its fail-closed authority semantics; later roadmap entries are targets, not claims of current capability.
 
@@ -23,13 +23,13 @@ PR #9 established the accepted governed/persisted-alpha repository base. Post-#9
 - [x] Create application shell
 - [x] Add authentication runtime wiring (validated SSR claims, PKCE callback, refresh-cookie proxy; production browser verification pending)
 - [x] Add profiles (persisted server-action path implemented; live database/RLS boundary verified, including reciprocal block-aware discovery after PR #16 admission)
-- [x] Add Spaces/membership (atomic owner creation + join path implemented; live database/RLS boundary verified)
+- [x] Add Spaces/membership (atomic owner creation, controlled open join, and invite-only membership path implemented; current Space-invitation/join-policy database boundary live-verified)
 - [x] Add posts and comments (human/source-linked post + comment persistence paths implemented; live database/RLS boundary verified)
 - [x] Add chronological feed
 - [x] Add basic reactions (authenticated path + membership-gated RLS; live member/non-member probe passed)
-- [x] Add report, block, and mute (authenticated UI/persistence paths implemented; report membership gate live-probed; block now has separately admitted bilateral relationship/privacy semantics; realistic multi-account abuse behavior remains an alpha validation item)
+- [x] Add report, block, and mute (authenticated UI/persistence paths implemented; report membership gate live-probed; block now has separately admitted bilateral relationship/privacy and pending-invitation terminalization semantics; realistic multi-account abuse behavior remains an alpha validation item)
 - [x] Add person-to-person connection-request lifecycle: request, accept, decline, cancel, disconnect
-- [x] Establish repository-level block/privacy precedence across profile discovery, relationship visibility, request, and acceptance; relationship migration and targeted live admission matrix passed on the dedicated project
+- [x] Establish repository-level block/privacy precedence across profile discovery, relationship visibility, request, acceptance, and pending Space invitations; relationship and invitation migrations have targeted live admission evidence on the dedicated project
 
 ## Phase 2 — Governance-native interaction
 
@@ -65,6 +65,7 @@ PR #9 established the accepted governed/persisted-alpha repository base. Post-#9
 - [x] Admit the governed-alpha database migrations and pass targeted live social-safety, governed-action, provenance, correction/appeal, replay, and cross-Space authority probes
 - [x] Add repository adversarial regression coverage for forged identity, capability self-expansion, replay, cross-Space moderation, direct audit/provenance bypass, unsafe redirect, viewer-local mute semantics, and bilateral block/relationship semantics
 - [x] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project
+- [x] Apply and live-verify the Space-invitation/join-policy migration against the dedicated Intellectro Supabase project, including current-policy recheck, wrong-actor denial, replay rejection, member-only grants, and block terminalization
 - [ ] Pass the production browser OTP/PKCE/session verification gate
 - [ ] Run realistic multi-account challenge/report/block/mute/connection and rate-limit abuse tests
 - [ ] Run Contextual Trust Comprehension formative study
@@ -81,11 +82,13 @@ External runtime, operations, real-model product-loop, and evaluation completion
 This phase turns discussion into useful shared work before broad agent autonomy.
 
 - [x] Connections/friend requests implemented as explicit mutual connection lifecycle; human connection grants no agent capability, Space role, or governance authority
-- [ ] Space invitations with explicit acceptance/revocation
-- [ ] Minimal shared work object: research question/project
-- [ ] Minimal task/artifact/outcome representation
+- [x] Space invitations with explicit acceptance/revocation (repository implementation plus dedicated live database/RLS admission; Browser Gate B remains separate)
+- [x] Minimal shared work object: research question/project (repository-domain contract only; persistence/UI deferred)
+- [x] Minimal task/artifact/outcome representation (repository-domain contract only; persistence/UI deferred)
 - [ ] Conversation-to-project conversion without losing source/discussion lineage
 - [x] Live multi-user relationship/RLS and privacy/block-precedence probes
+- [x] Live Space-invitation/join-policy authority, replay, policy-recheck, and block-terminalization probes
+- [ ] Persist and surface research/project collaboration objects through an independently verified database/UI lane
 - [ ] Observe at least one repeated useful collaborative-outcome loop with real users before expanding scope
 
 Product target:
