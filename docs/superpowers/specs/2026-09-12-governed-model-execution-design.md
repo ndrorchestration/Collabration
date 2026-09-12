@@ -95,19 +95,21 @@ Ordinary browser roles receive read access only when they are authorized to insp
 
 ### `agent_execution_receipts`
 
-Add an append-only execution receipt table with:
+Add an execution receipt table with:
 
 - `id`;
 - `execution_action_id` — unique FK to the single approved draft action consumed by this execution attempt;
-- `draft_id` — nullable on failure, populated on success;
+- `draft_id` — nullable until success, then populated with the immutable draft ID;
 - `provider_kind` — non-secret adapter identifier;
 - `model_identifier` — non-secret model identifier when available;
 - `input_sha256` — digest over the canonical admitted execution input;
 - `output_sha256` — draft digest on success;
-- `status` — `succeeded` or `failed`;
+- `status` — `running`, `succeeded`, or `failed`;
 - `failure_code` — bounded sanitized failure classification, never raw secret-bearing provider output;
 - `started_at` / `completed_at`;
 - `policy_version`.
+
+The database creates the `running` receipt atomically before any provider call. That row is the single-attempt claim: the unique `execution_action_id` prevents two concurrent requests from both reaching the provider. The server then finalizes the same receipt as `succeeded` or `failed`. `running` is an internal execution state, not a new user authority state.
 
 Each approved draft action authorizes at most one provider attempt in the first implementation. Success or failure is terminal for that action. A new attempt after failure, or any requested regeneration, requires a new governed draft action and fresh human approval.
 
@@ -184,13 +186,13 @@ For a draft action:
 
 Only `approved` may enter execution.
 
-Execution terminal states:
+Execution states:
 
-`not_started → succeeded | failed`
+`not_started → running → succeeded | failed`
 
-An approved action is consumable exactly once. A successful execution creates exactly one immutable draft and one execution receipt associated with that action. A repeated execution call returns the existing terminal result or an explicit already-executed result; it never calls the provider again.
+`running` is created transactionally before the provider call and is unique per approved action. This prevents concurrent replay from causing multiple external calls. An approved action is consumable exactly once. A successful execution creates exactly one immutable draft and finalizes the existing execution receipt. A repeated execution call returns the existing state or an explicit already-executed result; it never calls the provider again.
 
-A failed execution creates a failed receipt and no publishable draft. Failure is terminal for that action. Retrying or regenerating requires a new governed draft request and fresh human approval.
+A failed execution finalizes the claimed receipt as failed and creates no publishable draft. Failure is terminal for that action. Retrying or regenerating requires a new governed draft request and fresh human approval.
 
 ## Publication state machine
 
@@ -233,7 +235,7 @@ For a draft request, expose:
 - source/input references;
 - policy version;
 - pending/approved/rejected status;
-- execution unavailable/failed/succeeded state.
+- execution unavailable/running/failed/succeeded state.
 
 After successful execution, expose the exact draft content and digest-backed identity before publication can be requested.
 
@@ -256,6 +258,7 @@ Use bounded error classes suitable for UI and audit without exposing secrets:
 - `provider_unavailable`;
 - `action_not_approved`;
 - `action_already_executed`;
+- `execution_in_progress`;
 - `stale_input`;
 - `policy_mismatch`;
 - `provider_timeout`;
@@ -293,7 +296,7 @@ Require before implementation:
 - disabled provider produces no draft;
 - deterministic test provider is forbidden in production selection;
 - approved draft action produces one draft and receipt;
-- duplicate execution does not invoke provider twice;
+- concurrent/duplicate execution cannot obtain a second provider claim;
 - failed execution is terminal for that action and cannot be retried under the same approval;
 - regeneration requires a new approved draft action;
 - forged actor/action ID cannot bypass authority;
