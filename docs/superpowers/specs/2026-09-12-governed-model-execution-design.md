@@ -32,7 +32,7 @@ Stage 1 creates a private model-produced draft only after a draft-capability act
 
 This design is preferred over:
 
-1. **Execute on approval.** Rejected because it conflates an authorization state transition with an external side effect and makes approval retries/provider failures harder to reason about.
+1. **Execute on approval.** Rejected because it conflates an authorization state transition with an external side effect and makes provider failures harder to reason about.
 2. **Execute and publish in one action.** Rejected because it collapses two materially different authorities and would make autonomous public posting easier to introduce accidentally.
 3. **Provider-specific governance logic.** Rejected because capability, approval, replay, provenance, and publication semantics must not depend on a particular model vendor.
 
@@ -46,6 +46,7 @@ This design is preferred over:
 - The requester cannot act as the database authority merely by supplying an actor ID; server identity continues to derive from validated authentication state.
 - Publication requires a distinct approval record after the draft exists.
 - Publication is bound to the exact draft ID and content digest reviewed by the human approver.
+- Regeneration requires a new governed draft request and fresh human approval; an earlier execution approval is never silently reused.
 - A changed, regenerated, or superseded draft invalidates the prior publication request.
 - Replaying execution or publication must not create duplicate drafts or posts.
 - Provider failure, timeout, malformed output, missing configuration, stale policy state, stale approval, or missing provenance inputs fail closed.
@@ -84,10 +85,11 @@ Add an append-only draft artifact table with these semantic fields:
 - `content` — generated draft text;
 - `content_sha256` — digest of the exact stored draft bytes/text normalization contract;
 - `input_refs` — exact input references admitted for execution;
+- `supersedes_draft_id` — nullable FK to an earlier draft when a separately approved regeneration intentionally replaces it;
 - `status` — `current`, `superseded`, or `published`;
 - `created_at` — server timestamp.
 
-A draft is immutable once stored. Regeneration produces a new draft and marks the earlier draft `superseded`; it does not update the original content in place.
+A draft is immutable once stored. A request to regenerate creates a new governed draft action and requires a fresh human approval. If that separate action succeeds, its new draft may explicitly supersede an earlier draft; the original content remains immutable.
 
 Ordinary browser roles receive read access only when they are authorized to inspect the governing action/Space. They receive no direct INSERT/UPDATE/DELETE path.
 
@@ -96,8 +98,8 @@ Ordinary browser roles receive read access only when they are authorized to insp
 Add an append-only execution receipt table with:
 
 - `id`;
-- `execution_action_id` — unique for successful terminal execution; retry attempts are represented separately in receipt status/history if required by implementation;
-- `draft_id` — nullable on failed executions, populated on success;
+- `execution_action_id` — unique FK to the single approved draft action consumed by this execution attempt;
+- `draft_id` — nullable on failure, populated on success;
 - `provider_kind` — non-secret adapter identifier;
 - `model_identifier` — non-secret model identifier when available;
 - `input_sha256` — digest over the canonical admitted execution input;
@@ -106,6 +108,8 @@ Add an append-only execution receipt table with:
 - `failure_code` — bounded sanitized failure classification, never raw secret-bearing provider output;
 - `started_at` / `completed_at`;
 - `policy_version`.
+
+Each approved draft action authorizes at most one provider attempt in the first implementation. Success or failure is terminal for that action. A new attempt after failure, or any requested regeneration, requires a new governed draft action and fresh human approval.
 
 Receipts must not store credentials, authorization headers, full provider request objects, hidden chain-of-thought, or unrelated provider metadata.
 
@@ -184,9 +188,9 @@ Execution terminal states:
 
 `not_started → succeeded | failed`
 
-A successful execution creates exactly one immutable draft associated with the approved action. A repeated execution call for the same already-succeeded action returns the existing draft/receipt identity or an explicit already-executed result; it never calls the provider again.
+An approved action is consumable exactly once. A successful execution creates exactly one immutable draft and one execution receipt associated with that action. A repeated execution call returns the existing terminal result or an explicit already-executed result; it never calls the provider again.
 
-A failed execution does not create a publishable draft. Retry behavior must be explicit and bounded. A retry must retain the same approved action and canonical input digest unless a new human authorization is required by a policy or input change.
+A failed execution creates a failed receipt and no publishable draft. Failure is terminal for that action. Retrying or regenerating requires a new governed draft request and fresh human approval.
 
 ## Publication state machine
 
@@ -270,7 +274,7 @@ Raw provider response bodies are not surfaced to browser clients or durable publ
 - Provider credentials are read only from server-only environment variables.
 - Client-controlled fields cannot choose arbitrary provider endpoints or models unless a repository-owned allowlist explicitly permits them.
 - Execution must enforce maximum input and output sizes.
-- Provider calls must have timeouts and bounded retry behavior.
+- Provider calls must have timeouts. The first implementation performs no automatic provider retry after an attempted call.
 - User-provided source text is data, not instructions with governance authority.
 - Prompt injection in referenced content cannot grant capabilities or change publication state.
 - The executor cannot use model output as an authorization decision.
@@ -290,6 +294,8 @@ Require before implementation:
 - deterministic test provider is forbidden in production selection;
 - approved draft action produces one draft and receipt;
 - duplicate execution does not invoke provider twice;
+- failed execution is terminal for that action and cannot be retried under the same approval;
+- regeneration requires a new approved draft action;
 - forged actor/action ID cannot bypass authority;
 - cross-Space input reference is rejected;
 - missing/deleted/stale input is rejected;
@@ -341,7 +347,7 @@ and a rejection path demonstrates no publication.
 
 The first implementation plan should build the safe execution substrate without requiring paid/live provider use:
 
-1. schema and RLS/RPC contract for immutable drafts, execution receipts, publication binding, replay prevention, and atomic publication;
+1. schema and RLS/RPC contract for immutable drafts, single-attempt execution receipts, draft supersession, publication binding, replay prevention, and atomic publication;
 2. server-only provider interface;
 3. disabled provider plus deterministic test provider;
 4. canonical-input builder for source-linked-post context;
