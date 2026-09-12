@@ -49,3 +49,20 @@ test('live verification evidence binds relationship admission while preserving f
   assert.match(completion, /Evaluation.*NOT VERIFIED/is);
   assert.match(completion, /Alpha Complete.*NO/is);
 });
+
+test('Space invitation live admission is durably recorded without promoting Browser Gate B', () => {
+  const roadmap = read('docs/mvp-roadmap.md');
+  const live = read('docs/supabase-live-verification.md');
+  const invitationEvidence = read('docs/evidence/supabase-space-invitations-live-verification-2026-09-11.md');
+
+  assert.match(roadmap, /\[x\] Space invitations with explicit acceptance\/revocation/);
+  assert.match(roadmap, /\[x\] Minimal shared work object: research question\/project/);
+  assert.match(roadmap, /\[x\] Minimal task\/artifact\/outcome representation/);
+  assert.match(live, /20260911062000_space_invitations\.sql/);
+  assert.match(live, /20260912004221.*space_invitations/);
+  assert.match(live, /Browser Gate B.*NOT VERIFIED/is);
+  assert.match(invitationEvidence, /9a474c15ea7cb453e1d7384ed3a772c21c5c815d/);
+  assert.match(invitationEvidence, /13\/13/);
+  assert.match(invitationEvidence, /probe_users.*0/i);
+  assert.match(invitationEvidence, /anon_execute=false/i);
+});
