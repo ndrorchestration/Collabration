@@ -50,7 +50,7 @@ The security advisor currently reports 16 `authenticated_security_definer_functi
 
 ## Gate B — Authentication/session boundary
 
-**NOT VERIFIED.**
+**Browser Gate B: NOT VERIFIED.**
 
 Using real alpha test accounts through the production application:
 
@@ -165,6 +165,6 @@ Evidence records:
 
 ## Fail-closed rule
 
-Intellectro may describe the repository persistence boundary as **implemented** and the current live database/RLS layer, including the admitted human relationship/block and controlled Space invitation/join-policy boundaries, as **database-verified**. Overall live Supabase persistence remains **NOT VERIFIED** until browser Gate B passes against a configured production runtime.
+Intellectro may describe the repository persistence boundary as **implemented** and the current live database/RLS layer, including the admitted human relationship/block and controlled Space invitation/join-policy boundaries, as **database-verified**. Overall live Supabase persistence remains **NOT VERIFIED** until Browser Gate B passes against a configured production runtime.
 
 Human connection or Space membership state does not grant agent capability or independent governance authority. No real user pilot authorization, autonomous agent authority, production-readiness claim, Product-loop PASS, or Evaluation PASS follows from database verification alone.
