@@ -1,0 +1,46 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const sql = readFileSync(
+  new URL('../supabase/migrations/20260912060000_governed_model_execution.sql', import.meta.url),
+  'utf8'
+);
+
+test('governed model execution schema is append-only and replay resistant', () => {
+  assert.match(sql, /create table public\.agent_drafts/i);
+  assert.match(sql, /execution_action_id uuid not null unique/i);
+  assert.match(sql, /content_sha256 text not null/i);
+  assert.match(sql, /status text not null[^;]+current[^;]+superseded[^;]+published/is);
+  assert.match(sql, /create table public\.agent_execution_receipts/i);
+  assert.match(sql, /execution_action_id uuid not null unique/i);
+  assert.match(sql, /running[^;]+succeeded[^;]+failed/is);
+  assert.match(sql, /create table public\.agent_publications/i);
+  assert.match(sql, /publication_action_id uuid not null unique/i);
+  assert.match(sql, /draft_id uuid not null unique/i);
+});
+
+test('ordinary browser roles cannot write execution artifacts directly', () => {
+  for (const table of ['agent_drafts', 'agent_execution_receipts', 'agent_publications']) {
+    assert.match(sql, new RegExp(`alter table public\\.${table} enable row level security`, 'i'));
+  }
+  assert.doesNotMatch(sql, /create policy[^;]+agent_drafts[^;]+for insert[^;]+to authenticated/is);
+  assert.doesNotMatch(sql, /create policy[^;]+agent_execution_receipts[^;]+for insert[^;]+to authenticated/is);
+});
+
+test('RPCs are authenticated-only and fail closed', () => {
+  for (const fn of [
+    'claim_approved_agent_execution',
+    'complete_agent_execution_success',
+    'complete_agent_execution_failure',
+    'request_agent_draft_publication',
+    'publish_approved_agent_draft'
+  ]) {
+    assert.match(sql, new RegExp(`revoke execute on function public\\.${fn}`, 'i'));
+    assert.match(sql, new RegExp(`grant execute on function public\\.${fn}.*to authenticated`, 'is'));
+  }
+  assert.match(sql, /approval_status\s*<>\s*'approved'/i);
+  assert.match(sql, /policy_version\s*<>\s*'0\.1\.0-alpha'/i);
+  assert.match(sql, /content_sha256/i);
+  assert.match(sql, /for update/i);
+});
