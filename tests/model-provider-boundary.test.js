@@ -45,11 +45,17 @@ test('unsupported execution error codes fail closed', () => {
   assert.throws(() => new ExecutionError('invented_authority_state'), /Unsupported execution error code/);
 });
 
-test('production source exposes no deterministic test-provider selector or public provider secret', () => {
-  const plan = readFileSync(
-    new URL('../docs/superpowers/plans/2026-09-12-governed-model-execution.md', import.meta.url),
-    'utf8'
-  );
-  assert.doesNotMatch(plan, /NEXT_PUBLIC_[A-Z0-9_]*MODEL|NEXT_PUBLIC_[A-Z0-9_]*PROVIDER/);
-  assert.doesNotMatch(plan, /INTELLECTRO_PROVIDER\s*=\s*['"]?(?:test|deterministic)/i);
+test('executable provider source exposes no deterministic runtime selector or public provider secret', () => {
+  const executableSource = [
+    '../packages/model-execution/src/errors.js',
+    '../packages/model-execution/src/provider.js',
+    '../packages/model-execution/src/canonical-input.js',
+    '../packages/model-execution/src/index.js'
+  ]
+    .map((path) => readFileSync(new URL(path, import.meta.url), 'utf8'))
+    .join('\n');
+
+  assert.doesNotMatch(executableSource, /NEXT_PUBLIC_[A-Z0-9_]*(?:MODEL|PROVIDER)/);
+  assert.doesNotMatch(executableSource, /INTELLECTRO_PROVIDER\s*=\s*['"]?(?:test|deterministic)/i);
+  assert.doesNotMatch(executableSource, /process\.env\.[A-Z0-9_]*(?:MODEL|PROVIDER)/);
 });
