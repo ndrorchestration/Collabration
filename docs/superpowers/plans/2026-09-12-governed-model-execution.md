@@ -72,7 +72,12 @@
 
 **Interfaces:**
 - Consumes: existing `agent_actions`, `approval_records`, `posts`, `post_sources`, `sources`, `provenance_records`, `space_memberships`, `is_space_member(uuid)`, `is_space_moderator(uuid)`.
-- Produces: tables `agent_drafts`, `agent_execution_receipts`, `agent_publications`; RPCs `claim_approved_agent_execution(uuid,text,text)`, `complete_agent_execution_success(uuid,text,text,text,text,jsonb)`, `complete_agent_execution_failure(uuid,text)`, `request_agent_draft_publication(uuid)`, `publish_approved_agent_draft(uuid)`.
+- Produces tables: `agent_drafts`, `agent_execution_receipts`, `agent_publications`.
+- Produces RPC: `claim_approved_agent_execution(p_action_id uuid, p_provider_kind text, p_input_sha256 text) returns uuid`.
+- Produces RPC: `complete_agent_execution_success(p_receipt_id uuid, p_content text, p_content_sha256 text, p_model_identifier text, p_input_refs jsonb, p_supersedes_draft_id uuid default null) returns uuid`.
+- Produces RPC: `complete_agent_execution_failure(p_receipt_id uuid, p_failure_code text) returns void`.
+- Produces RPC: `request_agent_draft_publication(p_draft_id uuid) returns uuid`.
+- Produces RPC: `publish_approved_agent_draft(p_publication_action_id uuid) returns uuid`.
 
 - [ ] **Step 1: Write the RED structural contract test**
 
@@ -209,17 +214,13 @@ Use a uniqueness violation / explicit `55000` exception to prevent concurrent se
 
 - [ ] **Step 5: Implement success/failure finalizers**
 
-`complete_agent_execution_success(...)` must lock the `running` receipt, require the same action/Space/policy context, insert one immutable draft, set output digest, bind `draft_id`, and finalize receipt `succeeded`. It must reject a non-running receipt.
+`complete_agent_execution_success(p_receipt_id,p_content,p_content_sha256,p_model_identifier,p_input_refs,p_supersedes_draft_id)` must lock the `running` receipt, require the same action/Space/policy context, insert one immutable draft, set output digest, bind `draft_id`, and finalize receipt `succeeded`. It must reject a non-running receipt. If `p_supersedes_draft_id` is non-null, require that older draft to be in the same Space/agent and mark it `superseded` only after the new draft has been admitted.
 
 `complete_agent_execution_failure(p_receipt_id,p_failure_code)` must lock a `running` receipt, allow only a bounded failure code allowlist (`provider_unavailable`, `provider_timeout`, `provider_failure`, `invalid_provider_output`, `stale_input`, `policy_mismatch`), set `failed`, set `completed_at`, and create no draft.
 
 - [ ] **Step 6: Implement server-created publication request**
 
-`request_agent_draft_publication(p_draft_id)` must derive the caller, lock/read the current draft, require `status='current'`, require caller can act in the draft Space, map `draft_public_content→publish_public_content` and `draft_annotation→publish_annotation`, and insert a new `agent_actions` row with `approval_status='pending'` and canonical server-built `input_refs`:
-
-```json
-[{"type":"agent_draft","id":"<uuid>","sha256":"<64 hex>"}]
-```
+`request_agent_draft_publication(p_draft_id)` must derive the caller, lock/read the current draft, require `status='current'`, require caller can act in the draft Space, map `draft_public_content→publish_public_content` and `draft_annotation→publish_annotation`, and insert a new `agent_actions` row with `approval_status='pending'` and canonical server-built `input_refs` containing `type='agent_draft'`, the exact stored draft UUID, and the exact stored SHA-256 digest.
 
 Create an `agent_publications` row binding the new publication action to the exact draft. Do not accept client-supplied digest/agent/Space/capability.
 
@@ -237,29 +238,37 @@ Create an `agent_publications` row binding the new publication action to the exa
 - `agent_publications.post_id is null` and draft is not already published;
 - caller is current moderator/admin for the Space.
 
-On success insert exactly one `posts` row with:
+On success insert exactly one `posts` row with `kind='ai_assisted'`, `ai_assisted=true`, `ai_assistance_type='agent_generated'`, `agent_id` copied from the draft, and `human_approved=true`.
 
-```sql
-kind = 'ai_assisted',
-ai_assisted = true,
-ai_assistance_type = 'agent_generated',
-agent_id = <draft agent>,
-human_approved = true
-```
-
-Insert one `provenance_records` row recording the draft/input refs and transformations such as `[{"type":"governed_agent_draft","draft_id":"...","content_sha256":"..."}]`; update `agent_publications` with post/provenance/publisher/timestamp; set draft `published`. Return the post ID. Any failure rolls back all mutations.
+Insert one `provenance_records` row recording the draft/input refs and a transformation object with `type='governed_agent_draft'`, the exact draft UUID, and exact content SHA-256; update `agent_publications` with post/provenance/publisher/timestamp; set draft `published`. Return the post UUID. Any failure rolls back all mutations.
 
 - [ ] **Step 8: Lock down function ACLs**
 
-For every new RPC:
+Use these exact ACL statements after the five function definitions:
 
 ```sql
-revoke all on function public.<fn>(...) from public;
-revoke execute on function public.<fn>(...) from anon;
-grant execute on function public.<fn>(...) to authenticated;
+revoke all on function public.claim_approved_agent_execution(uuid,text,text) from public;
+revoke execute on function public.claim_approved_agent_execution(uuid,text,text) from anon;
+grant execute on function public.claim_approved_agent_execution(uuid,text,text) to authenticated;
+
+revoke all on function public.complete_agent_execution_success(uuid,text,text,text,jsonb,uuid) from public;
+revoke execute on function public.complete_agent_execution_success(uuid,text,text,text,jsonb,uuid) from anon;
+grant execute on function public.complete_agent_execution_success(uuid,text,text,text,jsonb,uuid) to authenticated;
+
+revoke all on function public.complete_agent_execution_failure(uuid,text) from public;
+revoke execute on function public.complete_agent_execution_failure(uuid,text) from anon;
+grant execute on function public.complete_agent_execution_failure(uuid,text) to authenticated;
+
+revoke all on function public.request_agent_draft_publication(uuid) from public;
+revoke execute on function public.request_agent_draft_publication(uuid) from anon;
+grant execute on function public.request_agent_draft_publication(uuid) to authenticated;
+
+revoke all on function public.publish_approved_agent_draft(uuid) from public;
+revoke execute on function public.publish_approved_agent_draft(uuid) from anon;
+grant execute on function public.publish_approved_agent_draft(uuid) to authenticated;
 ```
 
-Set `security definer` and `set search_path = ''`; fully qualify every object reference.
+Set every RPC `security definer` and `set search_path = ''`; fully qualify every object reference.
 
 - [ ] **Step 9: Run the migration contract test and full repository suite**
 
@@ -392,14 +401,7 @@ export class ExecutionError extends Error {
 
 `createDisabledProvider()` returns `{ kind: 'disabled', generateDraft: async () => { throw new ExecutionError('provider_unavailable'); } }`.
 
-`assertProviderResult(result)` requires:
-
-- plain object;
-- trimmed content length `1..20000`;
-- `providerKind` length `1..80`;
-- `modelIdentifier` length `1..200`;
-- optional `providerRequestId` length <= 200;
-- returns a frozen normalized result.
+`assertProviderResult(result)` requires a plain object; trimmed content length `1..20000`; `providerKind` length `1..80`; `modelIdentifier` length `1..200`; optional `providerRequestId` length <= 200; and returns a frozen normalized result.
 
 Do **not** implement a production provider selector.
 
@@ -485,16 +487,7 @@ Expected: FAIL because executor export does not exist.
 
 - [ ] **Step 3: Implement `executeClaimedDraft`**
 
-Sequence must be exactly:
-
-1. build fixed canonical input;
-2. compute input digest;
-3. call `claimExecution`;
-4. call provider once;
-5. normalize/validate result;
-6. compute exact output digest over normalized content;
-7. call `finalizeSuccess`;
-8. on provider/output error after successful claim, call `finalizeFailure` once then rethrow bounded `ExecutionError`.
+Sequence must be exactly: build fixed canonical input; compute input digest; call `claimExecution`; call provider once; normalize/validate result; compute exact output digest over normalized content; call `finalizeSuccess`; on provider/output error after successful claim, call `finalizeFailure` once then rethrow bounded `ExecutionError`.
 
 Never retry provider internally.
 
@@ -504,22 +497,34 @@ Require `context.js` to query the action first, then referenced post + post_sour
 
 - [ ] **Step 5: Implement `resolveExecutionContext(supabase, actionId)`**
 
-Read the action fields:
-
-```text
-id, agent_id, owner_id, space_id, capability, policy_version, approval_status, input_refs
-```
-
-Require exactly one supported source-linked post reference in `input_refs` for the first alpha implementation. Resolve the post inside the same Space and fetch source rows through `post_sources`. Missing/cross-Space/stale refs throw `ExecutionError('stale_input')` or `cross_space_binding`.
+Read action fields `id, agent_id, owner_id, space_id, capability, policy_version, approval_status, input_refs`. Require exactly one supported source-linked post reference in `input_refs` for the first alpha implementation. Resolve the post inside the same Space and fetch source rows through `post_sources`. Missing/cross-Space/stale refs throw `ExecutionError('stale_input')` or `ExecutionError('cross_space_binding')`.
 
 - [ ] **Step 6: Implement `runApprovedDraftExecution` with disabled default**
 
-`run.js` must default to `createDisabledProvider()` and accept an explicit `provider` argument only for server-side tests/internal composition. It calls:
+`run.js` must default to `createDisabledProvider()` and accept an explicit `provider` argument only for server-side tests/internal composition. Before the database claim, check `provider.kind === 'disabled'` and throw `provider_unavailable` so an unavailable provider does not consume the one authorized attempt.
+
+For an enabled injected provider, call the exact RPCs/signatures from Task 1 through Supabase:
 
 ```js
-supabase.rpc('claim_approved_agent_execution', {...})
-supabase.rpc('complete_agent_execution_success', {...})
-supabase.rpc('complete_agent_execution_failure', {...})
+supabase.rpc('claim_approved_agent_execution', {
+  p_action_id: actionId,
+  p_provider_kind: provider.kind,
+  p_input_sha256: inputSha256
+});
+
+supabase.rpc('complete_agent_execution_success', {
+  p_receipt_id: receiptId,
+  p_content: normalized.content,
+  p_content_sha256: outputSha256,
+  p_model_identifier: normalized.modelIdentifier,
+  p_input_refs: context.inputRefs,
+  p_supersedes_draft_id: context.supersedesDraftId ?? null
+});
+
+supabase.rpc('complete_agent_execution_failure', {
+  p_receipt_id: receiptId,
+  p_failure_code: error.code
+});
 ```
 
 No service-role client is introduced; the authenticated server Supabase client carries the user's validated session and the RPC enforces final database authority.
@@ -589,15 +594,15 @@ export async function executeApprovedAgentDraft(formData) {
 }
 ```
 
-With the default disabled provider, production merge-time behavior is an explicit `provider_unavailable` error after the execution claim **only if the action is deliberately invoked**. To avoid consuming approval when provider is disabled, `runApprovedDraftExecution` must detect `provider.kind === 'disabled'` before `claimExecution` and throw `provider_unavailable`; no receipt is created in that case.
+With the default disabled provider, execution returns `provider_unavailable` before claiming the database attempt; no receipt is created and the approval remains unconsumed.
 
 - [ ] **Step 5: Implement publication request action**
 
-`requestAgentDraftPublication` accepts `draft_id` only and calls `request_agent_draft_publication`. No digest or capability comes from the form.
+`requestAgentDraftPublication` accepts `draft_id` only and calls `request_agent_draft_publication` with `{ p_draft_id: draftId }`. No digest or capability comes from the form.
 
 - [ ] **Step 6: Implement explicit publish action**
 
-`publishApprovedAgentDraft` accepts `publication_action_id` only and calls `publish_approved_agent_draft`. It does not call a model.
+`publishApprovedAgentDraft` accepts `publication_action_id` only and calls `publish_approved_agent_draft` with `{ p_publication_action_id: publicationActionId }`. It does not call a model.
 
 - [ ] **Step 7: Verify tests**
 
@@ -654,41 +659,19 @@ Expected: FAIL because new props/copy/query paths do not exist.
 
 - [ ] **Step 3: Extend active-Space queries**
 
-In `page.js`, add Supabase queries for:
-
-- drafts in `activeSpace.id` ordered newest first;
-- execution receipts joined through action/draft visibility;
-- publication actions (`capability in publish_*`) and `agent_publications` for active Space.
-
-Do not fetch across Spaces and filter client-side when an RLS/query constraint can scope directly.
+In `page.js`, add Supabase queries for drafts in `activeSpace.id` ordered newest first; execution receipts joined through action/draft visibility; publication actions with the two publish capabilities; and `agent_publications` for the active Space. Do not fetch across Spaces and filter client-side when RLS/query constraints can scope directly.
 
 - [ ] **Step 4: Wire action handlers**
 
-Import and pass:
-
-```text
-executeApprovedAgentDraft
-requestAgentDraftPublication
-publishApprovedAgentDraft
-```
+Import and pass `executeApprovedAgentDraft`, `requestAgentDraftPublication`, and `publishApprovedAgentDraft`.
 
 - [ ] **Step 5: Render execution state separately from approval state**
 
-For approved draft actions with no receipt, render `Execute approved draft` only when the current server provider state is not falsely represented as configured. Since production provider remains disabled, the UI should show `Provider unavailable — execution remains disabled` rather than an enabled execution button in ordinary runtime.
-
-For `running`, show non-authority status `Execution in progress`; for failed, show bounded failure code only; for succeeded, show draft identity.
+For approved draft actions with no receipt, ordinary runtime must show `Provider unavailable — execution remains disabled` because the production provider remains disabled. Do not render an enabled execution button unless a later explicitly authorized provider lane changes that state. For `running`, show `Execution in progress`; for failed, show bounded failure code only; for succeeded, show draft identity.
 
 - [ ] **Step 6: Render immutable draft review and publication request**
 
-For each current draft show:
-
-- exact draft text;
-- agent/capability;
-- policy version;
-- SHA-256 digest prefix plus inspectable full digest;
-- `Request publication` action if no publication action exists.
-
-Never call it published/approved/verified because generation succeeded.
+For each current draft show exact draft text; agent/capability; policy version; SHA-256 digest prefix plus inspectable full digest; and `Request publication` action if no publication action exists. Never call it published/approved/verified because generation succeeded.
 
 - [ ] **Step 7: Render publication review and explicit publish**
 
@@ -717,7 +700,7 @@ git commit -m "feat: expose governed draft and publication review states"
 
 **Files:**
 - Create: `tests/model-execution-adversarial.test.js`
-- Create after live verification: `docs/evidence/supabase-governed-model-execution-live-verification-2026-09-12.md`
+- Create after successful live verification: `docs/evidence/supabase-governed-model-execution-live-verification-2026-09-12.md`
 
 **Interfaces:**
 - Consumes: all Task 1–5 contracts.
@@ -725,22 +708,7 @@ git commit -m "feat: expose governed draft and publication review states"
 
 - [ ] **Step 1: Write repository adversarial tests before live admission**
 
-Cover at minimum:
-
-1. anonymous EXECUTE revoked on all new RPCs;
-2. browser roles have no direct write policies on drafts/receipts/publication linkage;
-3. pending/rejected execution action cannot claim;
-4. duplicate/concurrent claim blocked by unique action receipt;
-5. failure receipt cannot transition back to running/success through another attempt;
-6. publication request does not accept caller-supplied digest/agent/Space;
-7. publication action must be separately approved;
-8. digest mismatch blocks publication;
-9. superseded/published draft cannot republish;
-10. cross-Space action/draft binding blocks;
-11. publication replay creates no second post;
-12. model output is never consulted for authorization;
-13. no autonomous-publication function/path exists;
-14. deterministic test provider has no production env selector.
+Cover at minimum: anonymous EXECUTE revoked on all new RPCs; browser roles have no direct write policies on drafts/receipts/publication linkage; pending/rejected execution action cannot claim; duplicate/concurrent claim blocked by unique action receipt; failure receipt cannot transition back to running/success through another attempt; publication request does not accept caller-supplied digest/agent/Space; publication action must be separately approved; digest mismatch blocks publication; superseded/published draft cannot republish; cross-Space action/draft binding blocks; publication replay creates no second post; model output is never consulted for authorization; no autonomous-publication path exists; deterministic test provider has no production env selector.
 
 - [ ] **Step 2: Run full exact-head repository verification before touching live Supabase**
 
@@ -751,7 +719,7 @@ npm test
 npm run build:web
 ```
 
-Expected: all PASS on Node 22-compatible local environment; GitHub PR CI must later prove Node 22 + Node 24 + build.
+Expected: all PASS locally; GitHub PR CI must independently prove Node 22 + Node 24 + production build.
 
 - [ ] **Step 3: Open/refresh a draft implementation PR and require exact-head CI GREEN**
 
@@ -759,12 +727,7 @@ Do not apply the migration live while the exact candidate CI is failing. Record 
 
 - [ ] **Step 4: Record live Supabase pre-admission baseline**
 
-Against dedicated project `hibesaapldkvgkydvbds`, capture:
-
-- migration ledger;
-- security advisor findings;
-- performance advisor findings;
-- row counts for new tables expected absent before migration.
+Against dedicated project `hibesaapldkvgkydvbds`, capture migration ledger; security advisor findings; performance advisor findings; and absence/row-count baseline for the three new tables.
 
 - [ ] **Step 5: Apply exact migration artifact**
 
@@ -772,17 +735,11 @@ Apply `20260912060000_governed_model_execution.sql` exactly as verified on the P
 
 - [ ] **Step 6: Verify ACL/RLS structure live**
 
-SQL assertions must prove:
-
-- `anon` execute = false for all new RPCs;
-- `authenticated` execute = true;
-- no direct authenticated INSERT/UPDATE/DELETE policy on `agent_drafts`, `agent_execution_receipts`, `agent_publications`;
-- unique constraints exist for single execution/publication consumption;
-- RLS enabled.
+SQL assertions must prove `anon` execute = false for all new RPCs; `authenticated` execute = true; no direct authenticated INSERT/UPDATE/DELETE policy on `agent_drafts`, `agent_execution_receipts`, `agent_publications`; unique constraints exist for single execution/publication consumption; RLS enabled.
 
 - [ ] **Step 7: Run disposable multi-user live behavior matrix**
 
-Use synthetic auth UUID identities and transaction-scoped claim context. Verify at least these checks:
+Use synthetic auth UUID identities and transaction-scoped claim context. Verify these exact cases:
 
 ```text
 A member requests draft action                    ALLOW
@@ -809,24 +766,15 @@ Because no real provider is needed, simulate only the database finalizer inputs 
 
 - [ ] **Step 8: Purge synthetic data and prove zero residue**
 
-Delete all synthetic Spaces/users in dependency-safe order or wrap probes in rollback where possible. Query all new tables plus touched posts/provenance/actions for probe identifiers and require zero.
+Delete all synthetic Spaces/users in dependency-safe order or wrap probes in rollback where possible. Query all three new tables plus touched posts/provenance/actions for probe identifiers and require zero.
 
 - [ ] **Step 9: Rerun security/performance advisors**
 
-Classify any new `authenticated SECURITY DEFINER` warnings as intentional only after verifying anon EXECUTE revoked and internal authorization. New performance findings must be separately evaluated; do not silently accept authority changes to optimize them.
+Classify any new authenticated `SECURITY DEFINER` warnings as intentional only after verifying anon EXECUTE revoked and internal authorization. New performance findings must be separately evaluated; do not silently change authority to optimize them.
 
 - [ ] **Step 10: Write dated live evidence record**
 
-Document:
-
-- repository candidate SHA;
-- exact CI run;
-- migration repository name + live ledger name;
-- ACL/RLS results;
-- positive/negative behavior matrix counts;
-- advisor before/after;
-- zero-residue result;
-- explicit non-claims: real provider, production runtime, Browser Gate B, model quality, CTC, Alpha Complete.
+Document repository candidate SHA; exact CI run; migration repository name + live ledger name; ACL/RLS results; positive/negative behavior matrix counts; advisor before/after; zero-residue result; and explicit non-claims for real provider, production runtime, Browser Gate B, model quality, CTC, and Alpha Complete.
 
 - [ ] **Step 11: Commit evidence and rerun exact-head CI**
 
@@ -884,8 +832,8 @@ Add only evidence supported by Task 6. Keep database/RLS and runtime/browser/pro
 Promote only predicates actually satisfied:
 
 ```text
-Repository governed-execution substrate: PASS (if final CI green)
-Database governed-execution boundary: PASS (if live probes passed)
+Repository governed-execution substrate: PASS (only after final exact-head CI is green)
+Database governed-execution boundary: PASS (only after live probes pass)
 Real provider execution: NOT VERIFIED
 Production persisted product loop: NOT VERIFIED
 Browser Gate B: NOT VERIFIED
@@ -910,17 +858,7 @@ Then require GitHub exact-head CI: Node 22 PASS, Node 24 PASS, Next.js productio
 
 - [ ] **Step 7: Perform final diff/review gate**
 
-Review every changed file for:
-
-- actor identity derived server-side;
-- no service-role/browser secret;
-- no provider selector exposing deterministic fixture in production;
-- no execution-on-approval side effect;
-- no publication without separate approval;
-- no digest supplied by client;
-- one-attempt uniqueness;
-- no hidden authority expansion;
-- no documentation overclaim.
+Review every changed file for actor identity derived server-side; no service-role/browser secret; no provider selector exposing deterministic fixture in production; no execution-on-approval side effect; no publication without separate approval; no digest supplied by client; one-attempt uniqueness; no hidden authority expansion; no documentation overclaim.
 
 Any discovered defect creates another RED→GREEN cycle and invalidates earlier exact-head CI for merge purposes.
 
@@ -930,25 +868,11 @@ Use expected-head SHA protection on the merge call. Do not merge if the PR head 
 
 - [ ] **Step 9: Verify post-merge `main` independently**
 
-Require:
-
-- signed/verified merge commit;
-- `main` points to expected merge;
-- post-merge push CI Node 22 PASS;
-- Node 24 PASS;
-- Next.js production build PASS.
+Require signed/verified merge commit; `main` points to expected merge; post-merge push CI Node 22 PASS; Node 24 PASS; Next.js production build PASS.
 
 - [ ] **Step 10: Update issue #10 without closing it**
 
-Mark only the repository/database **substrate** portion complete. Explicitly retain these open predicates:
-
-- production Vercel public Supabase configuration;
-- Supabase Auth Site/Redirect configuration;
-- Browser Gate B;
-- protected `main`;
-- explicitly authorized real-provider adapter/credentials;
-- deployed real-provider end-to-end product-loop evidence;
-- human CTC evaluation.
+Mark only the repository/database **substrate** portion complete. Explicitly retain production Vercel public Supabase configuration; Supabase Auth Site/Redirect configuration; Browser Gate B; protected `main`; explicitly authorized real-provider adapter/credentials; deployed real-provider end-to-end product-loop evidence; and human CTC evaluation.
 
 - [ ] **Step 11: Reconcile Notion OCC after post-merge verification**
 
