@@ -37,14 +37,18 @@ It also contains the first **persisted-alpha application boundary**:
 - a narrow pending governed-action request/decision lifecycle that records human approval or rejection without executing a model or publishing output;
 - an approved-action provenance receipt boundary that preserves provenance without claiming truth;
 - an append-only correction/appeal workflow whose resolution does not rewrite the original post or governed action;
-- versioned Supabase migrations with RLS on every admitted runtime table and repository checks for the connection-relationship candidate;
+- versioned Supabase migrations with RLS on every admitted runtime table;
 - membership-gated social writes, atomic Space-owner creation, author-controlled direct source linkage, and Space-scoped moderator decisions;
 - no ordinary client insert path for `agent_actions` or `provenance_records`;
 - explicit Demo/fail-closed behavior when Supabase public configuration is absent.
 
-**Important evidence boundary:** the dedicated Intellectro Supabase project has the pre-relationship canonical migrations applied and its admitted database/RLS boundary, function ACLs, governed-action authorization, provenance authority, correction/appeal authority, and tested database-enforced failure cases have passed. The newer connection-relationship migration is **repository-verified only** until it is separately applied and live-probed on that dedicated project. Overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**. Production must continue to fail closed when its public Supabase runtime configuration is absent.
+**Important evidence boundary:** the dedicated Intellectro Supabase project has all ten currently admitted repository migrations represented in the live migration ledger, including connection relationships, Space invitations, and performance hardening. The live database currently exposes 18 public runtime tables with RLS enabled on all 18. The database/RLS boundary is therefore verified to the admitted scope, but overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**.
 
-Repository-controlled moderator review, governed action/provenance boundaries, correction/appeal, Content Passport semantics, and the connection relationship candidate are implemented. Still open are live admission of the relationship migration, production runtime configuration, real browser Gate B, realistic multi-account abuse/rate-limit testing, mainline required-check protection, a real model-backed governed product loop, and the human Contextual Trust Comprehension evaluation. Any future model-provider integration must remain server-only and fail closed when unconfigured; repository completion does not authorize paid provider use or autonomous public posting.
+As of the 2026-09-15 reconciliation, the Vercel project is correctly linked to `ndrorchestration/Intellectro`, but the production health endpoint reports `runtimeMode=misconfigured`, `persistence=disabled`, and `configurationReason=production_persistence_missing`. The correct fail-closed conclusion is that **production persistence is not currently configured**, not that a Supabase binding has been proven. No secret value is required to establish that negative finding.
+
+The Supabase security advisor currently retains 16 `authenticated_security_definer_function_executable` warnings across intentionally exposed authenticated RPCs. These warnings are not automatically vulnerabilities. Existing live tests cover many authority and lifecycle cases, but a complete per-function negative matrix for wrong caller, wrong object, cross-Space access, and invalid/stale lifecycle transitions remains open.
+
+Repository-controlled moderator review, governed action/provenance boundaries, correction/appeal, Content Passport semantics, human relationships, Space invitations, and performance hardening are implemented and live-admitted at the database/RLS boundary. Still open are production persistence configuration, real browser Gate B, completion of the 16-function negative authorization matrix, realistic multi-account abuse/rate-limit testing, mainline required-check protection, package-manager/runtime pinning evidence, a real model-backed governed product loop, and the human Contextual Trust Comprehension evaluation. Any future model-provider integration must remain server-only and fail closed when unconfigured; repository completion does not authorize paid provider use or autonomous public posting.
 
 ## Run locally
 
@@ -149,6 +153,7 @@ docs/                   product, architecture, evaluation, threat models, verifi
 - [`docs/alpha-completion-gates.md`](docs/alpha-completion-gates.md) — repository/runtime/product/evaluation completion predicates
 - [`docs/threat-model-social-slice.md`](docs/threat-model-social-slice.md) — vertical-slice threats, controls, and required live evidence
 - [`docs/supabase-live-verification.md`](docs/supabase-live-verification.md) — live database/RLS and browser auth/session verification gates
+- [`docs/evidence/ecosystem-dependency-reconciliation-2026-09-15.md`](docs/evidence/ecosystem-dependency-reconciliation-2026-09-15.md) — current cross-provider dependency, migration, advisor, and runtime-binding reconciliation
 - [`docs/research-context.md`](docs/research-context.md) — competitive/research context with evidence-status cautions
 - [`docs/history/strategic-evolution.md`](docs/history/strategic-evolution.md) — why the thesis moved from agent-native to governance-native
 - [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml) — machine-readable initial policy
