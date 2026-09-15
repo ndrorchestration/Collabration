@@ -9,6 +9,7 @@ This record reconciles repository, Vercel, and Supabase dependency state without
 - Repository: `ndrorchestration/Intellectro`.
 - Production deployment remains bound to commit `3b16fbb94a61219bae6a10f19862fdaa9956f514`.
 - Repository `main` advanced to `3852ede2511db151ba9259a067ec4cdfdc7bcaa1` after that deployment. GitHub compare reports two commits ahead and **zero net changed files** between `3b16fbb...` and `3852ede...`; source-tree equivalence is therefore established for that comparison, while commit identity is no longer exact.
+- Fresh push CI on `3852ede...` completed SUCCESS.
 - Production `/api/health` reports `runtimeMode=misconfigured`, `persistence=disabled`, `configurationReason=production_persistence_missing`.
 - Correct fail-closed conclusion: the dedicated Supabase project exists and is healthy, but production persistence is **not configured/admitted** until the required production environment binding is supplied and re-verified.
 
@@ -58,17 +59,28 @@ Baseline controls already present before this hardening lane:
 - committed npm lockfile (lockfile v3);
 - `npm ci` in CI;
 - lifecycle scripts disabled with `--ignore-scripts`;
-- Node 22 and 24 test matrix;
+- Node 22 and 24 compatibility test matrix;
 - production build job.
 
-This hardening lane adds:
+Hardening lane controls now proposed on PR #33:
 
 - `.npmrc` minimum release age of 7 days;
 - transitive exotic dependency sources restricted to root declarations (`git`, remote URL, file, directory);
-- a dedicated dependency-custody CI job;
+- package manager declared as `npm@11.19.0`, derived from fresh CI rather than guessed;
+- production-build and dependency-custody jobs pinned to Node `24.20.0`;
+- a dedicated dependency-custody CI job that asserts the Node/npm identity and release-age policy;
 - explicit lockfile non-mutation check after `npm ci`;
-- advisory `npm audit signatures` provenance/signature inspection;
-- logging of the actual Node/npm identity used by CI so an exact package-manager pin can be made from observed evidence rather than guessed.
+- `npm audit signatures` provenance/signature inspection.
+
+The first dependency-custody run on PR #33 completed SUCCESS before the explicit version pin was added and established the evidence used for the pin:
+
+- Node `v24.20.0`;
+- npm `11.19.0`;
+- frozen `npm ci` completed without lockfile mutation;
+- 36 packages had verified registry signatures;
+- 28 packages had verified attestations.
+
+A fresh PR run after the explicit package-manager/runtime pin remains the acceptance evidence for the final PR head.
 
 ## Remaining controls
 
@@ -76,10 +88,9 @@ This hardening lane adds:
 2. Complete Browser Gate B with real authenticated session/persistence evidence.
 3. Execute the 25 remaining privileged-RPC negative cases with retained evidence; do not use matrix completion as a substitute for broader security testing.
 4. Establish stronger live migration equivalence if needed by comparing live definitions/schema to source migrations; the ledger alone cannot prove byte equivalence.
-5. Pin the package manager only after the new CI job records the exact npm identity used by the supported Node runtime.
-6. Protect `main` with required CI/status checks. This is a repository-administration control and is not established by source configuration alone.
-7. Perform a built-artifact/public-bundle scan for elevated key material before any production-readiness claim.
+5. Protect `main` with required CI/status checks. This is a repository-administration control and is not established by source configuration alone.
+6. Perform a built-artifact/public-bundle scan for elevated key material before any production-readiness claim.
 
 ## State
 
-`SOURCE CUSTODY IMPROVED / PRODUCTION PERSISTENCE NOT CONFIGURED / RPC NEGATIVE EVIDENCE PARTIAL / MIGRATION NAME CUSTODY VERIFIED / SQL-CONTENT EQUIVALENCE NOT VERIFIED / PRODUCTION READINESS NOT ESTABLISHED`
+`SOURCE CUSTODY HARDENING IN PR / PRODUCTION PERSISTENCE NOT CONFIGURED / RPC NEGATIVE EVIDENCE PARTIAL / MIGRATION NAME CUSTODY VERIFIED / SQL-CONTENT EQUIVALENCE NOT VERIFIED / PRODUCTION READINESS NOT ESTABLISHED`
