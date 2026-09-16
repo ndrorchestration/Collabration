@@ -4,6 +4,40 @@
 
 The alpha thesis is simple: users should be able to participate in a familiar social space while understanding who created content, whether AI was involved, what an agent was allowed to do, who approved public actions, what evidence supports a claim, and how the result can be challenged or corrected.
 
+## Five-minute evaluator path
+
+If you are evaluating Intellectro as a product-engineering or AI-governance portfolio artifact, start here.
+
+**1. Understand the product boundary.** Intellectro is a social application with explicit governance around agent capabilities, human approval, provenance, correction, and persistence. It is not presented as a production-ready autonomous-agent platform.
+
+**2. Inspect the implementation surfaces.** Start with [`apps/web/`](apps/web/), [`packages/governance/`](packages/governance/), [`packages/provenance/`](packages/provenance/), and [`supabase/`](supabase/). The canonical capability policy is [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml).
+
+**3. Run the repository checks.**
+
+```bash
+npm ci
+npm run check
+npm test
+npm run dev:web
+```
+
+The governance/domain tests require no production credentials. Without public Supabase configuration, the application is expected to fail closed into explicit Demo mode rather than silently pretending persistence is available.
+
+**4. Inspect the trust boundary.** The repository contains authenticated application paths, RLS-backed database design, governed action/provenance records, approval flows, and correction/appeal mechanics. Current production persistence configuration and browser/session verification remain separate runtime gates; repository completion is not evidence of production readiness or security certification.
+
+**5. Follow the evidence instead of the demo.** For exact current boundaries, read [Current implementation status](#current-implementation-status), [`docs/supabase-live-verification.md`](docs/supabase-live-verification.md), and [`docs/alpha-completion-gates.md`](docs/alpha-completion-gates.md). The deployed application is a presentation/runtime surface, not a substitute for those evidence records.
+
+### What this demonstrates
+
+Within the stated evidence boundary, this repository demonstrates practical work in:
+
+- Next.js application engineering with authenticated server-side paths;
+- Supabase/Postgres schema and row-level-security design;
+- deny-by-default capability and human-approval controls;
+- provenance, revision-aware Content Passport, and governed-action records;
+- correction, appeal, blocking, moderation, and relationship lifecycle design;
+- CI-tested governance/domain contracts that keep implementation, runtime verification, and authorization separate.
+
 ## Current implementation status
 
 The repository contains the executable governance foundation:
