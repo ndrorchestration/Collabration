@@ -2,7 +2,7 @@
 
 ## Evidence notation
 
-A checked repository item means the implementation exists and is covered by repository verification. Live-state claims are called out separately. The dedicated Intellectro Supabase project has passed schema admission, the original multi-user database/RLS verification, the governed-alpha candidate's targeted authority probes, PR #16's relationship/RLS/block-precedence admission matrix, and PR #24's Space-invitation/join-policy live admission matrix. Overall production persistence remains **NOT VERIFIED** until the browser OTP/PKCE/session Gate B passes.
+A checked repository item means the implementation exists and is covered by repository verification. Live-state claims are called out separately. The dedicated Collabration Supabase project (current provider display name **Intellectro**, ref `hibesaapldkvgkydvbds`) has passed schema admission, the original multi-user database/RLS verification, the governed-alpha candidate's targeted authority probes, PR #16's relationship/RLS/block-precedence admission matrix, and PR #24's Space-invitation/join-policy live admission matrix. Overall production persistence remains **NOT VERIFIED** until the browser OTP/PKCE/session Gate B passes.
 
 PR #9 established the accepted governed/persisted-alpha repository base. Post-#9 work must preserve its fail-closed authority semantics; later roadmap entries are targets, not claims of current capability.
 
@@ -61,11 +61,11 @@ PR #9 established the accepted governed/persisted-alpha repository base. Post-#9
 
 ## Phase 4 — Alpha validation
 
-- [x] Apply the pre-relationship canonical migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate
+- [x] Apply the pre-relationship canonical migrations to the dedicated Collabration Supabase project (provider display name Intellectro) and pass the multi-user RLS verification gate
 - [x] Admit the governed-alpha database migrations and pass targeted live social-safety, governed-action, provenance, correction/appeal, replay, and cross-Space authority probes
 - [x] Add repository adversarial regression coverage for forged identity, capability self-expansion, replay, cross-Space moderation, direct audit/provenance bypass, unsafe redirect, viewer-local mute semantics, and bilateral block/relationship semantics
-- [x] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project
-- [x] Apply and live-verify the Space-invitation/join-policy migration against the dedicated Intellectro Supabase project, including current-policy recheck, wrong-actor denial, replay rejection, member-only grants, and block terminalization
+- [x] Apply and live-verify the connection-relationship migration against the dedicated Supabase project
+- [x] Apply and live-verify the Space-invitation/join-policy migration against the dedicated Supabase project, including current-policy recheck, wrong-actor denial, replay rejection, member-only grants, and block terminalization
 - [ ] Pass the production browser OTP/PKCE/session verification gate
 - [ ] Run realistic multi-account challenge/report/block/mute/connection and rate-limit abuse tests
 - [ ] Run Contextual Trust Comprehension formative study
@@ -94,6 +94,12 @@ This phase turns discussion into useful shared work before broad agent autonomy.
 Product target:
 
 `connect → Space → discuss → coordinate → produce artifact/task/outcome`
+
+Brand-level learning loop:
+
+`connect → collaborate → calibrate → learn → improve → celebrate → repeat`
+
+The brand loop is product language, not a claim that every stage is implemented or empirically validated.
 
 ## Phase 6 — Personal Agent copilot
 
@@ -145,3 +151,7 @@ Progression:
 - [ ] Define transparent execution allowances rather than exposing raw token accounting
 - [ ] Launch-jurisdiction privacy/AI-transparency/moderation review
 - [ ] Data retention/export/delete flows
+
+## Naming boundary
+
+Collabration is the canonical current product identity. **Intellectro** remains a historical/provider alias where old repository URLs, current provider display names, commits, deployments, or evidence require it. The rename itself advances none of the roadmap evidence gates above.

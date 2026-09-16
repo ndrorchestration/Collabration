@@ -4,7 +4,7 @@ export function buildDeploymentContract(env = process.env) {
   const runtime = resolveRuntimeMode(env);
 
   return Object.freeze({
-    service: 'intellectro',
+    service: 'collabration',
     status: runtime.healthy ? 'ok' : 'misconfigured',
     commitSha: env.VERCEL_GIT_COMMIT_SHA || null,
     environment: env.VERCEL_ENV || 'local',

@@ -13,7 +13,7 @@ test('deployment contract exposes only non-secret governed runtime state', () =>
   });
 
   assert.deepEqual(contract, {
-    service: 'intellectro',
+    service: 'collabration',
     status: 'ok',
     commitSha: 'abc123',
     environment: 'production',
@@ -61,5 +61,5 @@ test('partial persistence configuration is unhealthy and never demo mode', () =>
 
 test('web workspace declares the governance package consumed by its runtime', async () => {
   const webPackage = JSON.parse(await readFile(new URL('../apps/web/package.json', import.meta.url), 'utf8'));
-  assert.equal(webPackage.dependencies?.['@intellectro/governance'], '0.0.1-alpha');
+  assert.equal(webPackage.dependencies?.['@collabration/governance'], '0.0.1-alpha');
 });

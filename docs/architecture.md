@@ -2,9 +2,11 @@
 
 ## System shape
 
-Intellectro begins as a governance-native social application and evolves toward an **accountable collaboration network**, not a general autonomous-agent network.
+Collabration begins as a governance-native human+AI social application and evolves toward an **accountable collaboration network**, not a general autonomous-agent network.
 
 The foreground experience is people, relationships, Spaces, discussion, shared work, and outcomes. Governance/provenance infrastructure remains underneath the experience and is progressively disclosed when authority or trust matters.
+
+The brand-level learning loop is `connect → collaborate → calibrate → learn → improve → celebrate → repeat`. It describes the human+AI collaboration experience, not an authorization state machine and not evidence of efficacy.
 
 ### Layer 0 — Governance kernel
 
@@ -126,7 +128,7 @@ Each transition is independently meaningful:
 - a repository implementation does not establish live-runtime verification;
 - one project's evidence never authorizes another project.
 
-For higher-impact actions, Intellectro should prefer separation between the component proposing an action and the authority validating it. Depending on the action, that verifier may be a human moderator, a separately scoped policy evaluator, or another independently constrained component.
+For higher-impact actions, Collabration should prefer separation between the component proposing an action and the authority validating it. Depending on the action, that verifier may be a human moderator, a separately scoped policy evaluator, or another independently constrained component.
 
 ## Exact-action authorization target
 
@@ -190,7 +192,7 @@ Personal Agent → specialist agent → Community Agent collaboration must not b
 
 ## Capability-release progression
 
-Broader autonomous authority is earned incrementally rather than enabled as a package. A new consequential capability should not advance beyond its current state until Intellectro has its own:
+Broader autonomous authority is earned incrementally rather than enabled as a package. A new consequential capability should not advance beyond its current state until Collabration has its own:
 
 1. versioned capability and policy definition;
 2. explicit owner and scope;
@@ -201,13 +203,13 @@ Broader autonomous authority is earned incrementally rather than enabled as a pa
 7. runtime evidence for the environment where the capability will operate;
 8. explicit release/hold decision.
 
-This progression is inspired by governance lessons developed elsewhere in the NDR ecosystem, including DGAF, but the implementation and evidence are strictly Intellectro-native. See [`docs/adr/0004-pattern-transfer-without-authority-transfer.md`](adr/0004-pattern-transfer-without-authority-transfer.md).
+This progression is inspired by governance lessons developed elsewhere in the NDR ecosystem, including DGAF, but the implementation and evidence are strictly Collabration-native. See [`docs/adr/0004-pattern-transfer-without-authority-transfer.md`](adr/0004-pattern-transfer-without-authority-transfer.md).
 
 ## Pattern-transfer boundary
 
-Intellectro may reuse governance patterns from DGAF or other NDR projects as design inputs. It does not inherit their authorization state, verification class, scientific claims, experiment results, freeze state, custody evidence, or efficacy claims.
+Collabration may reuse governance patterns from DGAF or other NDR projects as design inputs. It does not inherit their authorization state, verification class, scientific claims, experiment results, freeze state, custody evidence, or efficacy claims.
 
-Adoption requires an Intellectro specification, implementation, tests, runtime evidence when applicable, and product-appropriate user semantics. Matching terminology is never sufficient evidence of matching behavior.
+Adoption requires a Collabration specification, implementation, tests, runtime evidence when applicable, and product-appropriate user semantics. Matching terminology is never sufficient evidence of matching behavior.
 
 ## Repository boundaries
 

@@ -1,5 +1,5 @@
 {
-  "name": "@intellectro/web",
+  "name": "@collabration/web",
   "version": "0.0.1-alpha",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
-    "@intellectro/governance": "0.0.1-alpha",
-    "@intellectro/social-core": "0.0.1-alpha",
+    "@collabration/governance": "0.0.1-alpha",
+    "@collabration/social-core": "0.0.1-alpha",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
     "next": "16.3.4",

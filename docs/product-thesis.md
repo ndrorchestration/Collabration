@@ -2,11 +2,17 @@
 
 ## Canonical thesis
 
-> **Intellectro is an accountable collaboration network: a social environment where people form relationships and communities, each person can have a personal AI teammate, and consequential human-agent collaboration remains inspectable, bounded, reversible, and challengeable.**
+> **Collabration is an accountable human+AI collaboration network: a social environment where people form relationships and communities, each person can have a personal AI teammate, and consequential human-agent collaboration remains inspectable, bounded, reversible, and challengeable.**
 
 Short positioning:
 
-> **Intellectro is where people and their AI teammates work together in communities without making agency invisible.**
+> **Collabration is where people and their AI teammates work together in communities without making agency invisible.**
+
+Canonical brand language:
+
+> **Metacollaborate. Metacalibrate. Metacelebrate.**
+
+The name intentionally joins three product ideas: collaboration, calibration, and celebration. Collaboration is the shared work; calibration is the ongoing adjustment of trust, roles, confidence, permissions, preferences, and expectations against evidence and feedback; celebration is recognition of useful contribution and shared accomplishment without turning popularity or reputation into authority.
 
 The foreground product is people working together. Governance, provenance, verification, and correction are trust infrastructure underneath that experience rather than a dashboard users must operate for routine social interaction.
 
@@ -14,7 +20,7 @@ This framing supersedes earlier descriptions that centered autonomous agents as 
 
 ## User problem
 
-Intellectro is designed around three related failures in contemporary online interaction:
+Collabration is designed around three related failures in contemporary online interaction:
 
 1. **Authorship opacity** — users often cannot tell who or what produced, transformed, recommended, or moderated content.
 2. **AI authority opacity** — AI participation can be difficult to inspect, constrain, challenge, or attribute.
@@ -22,7 +28,7 @@ Intellectro is designed around three related failures in contemporary online int
 
 ## Product promise
 
-Intellectro should feel:
+Collabration should feel:
 
 - **Socially familiar** — participation should resemble ordinary community interaction.
 - **Outcome-oriented** — discussion can become research packets, resolved questions, projects, tasks, artifacts, and completed collaborative work.
@@ -69,11 +75,15 @@ Add deeper interactions only when trust or collaboration requires them:
 - Request moderator review
 - Request correction/appeal
 
-The mature loop is:
+The mature product loop is:
+
+`connect → collaborate → calibrate → learn → improve → celebrate → repeat`
+
+A more operational collaboration path remains:
 
 `connect → Space → discuss → ask my Personal Agent → research/draft/organize → human review → share → collaborate/challenge → produce outcome → preserve correction history`
 
-The near-term alpha remains narrower and must not imply that Personal Agent or project workflows are already implemented.
+The first loop is brand/product language, not an authorization state machine or efficacy claim. The near-term alpha remains narrower and must not imply that Personal Agent or project workflows are already implemented.
 
 ## Personal Agent product posture
 
@@ -145,3 +155,7 @@ The alpha must answer two linked questions:
 > **Can that discussion repeatedly produce useful collaborative outcomes without the accountability layer becoming prohibitive friction?**
 
 A future north-star candidate is **Weekly Collaborative Outcomes**: shared artifacts, resolved research questions, accepted project outputs, or completed collaborative tasks involving meaningful human participation, measured separately from comprehension, safety, reliability, and economics.
+
+## Naming lineage
+
+The product was formerly named **Intellectro**. That name remains only where required to preserve historical chronology, provider identifiers, old URLs, commits, or evidence. The naming transition itself changes no implementation, runtime, security, authorization, evaluation, verification, efficacy, deployment, or production-readiness state.

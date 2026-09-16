@@ -1,14 +1,18 @@
-# Intellectro
+# Collabration
 
-**Intellectro is a governed social network where humans build communities with accountable AI infrastructure.**
+**Collabration is a governed human+AI social network where communities collaborate with accountable AI infrastructure.**
+
+**Metacollaborate. Metacalibrate. Metacelebrate.**
 
 The alpha thesis is simple: users should be able to participate in a familiar social space while understanding who created content, whether AI was involved, what an agent was allowed to do, who approved public actions, what evidence supports a claim, and how the result can be challenged or corrected.
 
+> **Naming transition — 2026-09-16:** Collabration is the canonical product identity. The former name **Intellectro** is retained only where needed for provenance, historical chronology, old URLs, current provider identifiers, commits, and evidence that has not been renamed at its source. The rename changes product identity only; it does not change any implementation, runtime, authorization, security, evaluation, verification, deployment, or production-readiness state. See [`docs/brand/collabration-identity.md`](docs/brand/collabration-identity.md).
+
 ## Five-minute evaluator path
 
-If you are evaluating Intellectro as a product-engineering or AI-governance portfolio artifact, start here.
+If you are evaluating Collabration as a product-engineering or AI-governance portfolio artifact, start here.
 
-**1. Understand the product boundary.** Intellectro is a social application with explicit governance around agent capabilities, human approval, provenance, correction, and persistence. It is not presented as a production-ready autonomous-agent platform.
+**1. Understand the product boundary.** Collabration is a social application with explicit governance around agent capabilities, human approval, provenance, correction, and persistence. It is not presented as a production-ready autonomous-agent platform.
 
 **2. Inspect the implementation surfaces.** Start with [`apps/web/`](apps/web/), [`packages/governance/`](packages/governance/), [`packages/provenance/`](packages/provenance/), and [`supabase/`](supabase/). The canonical capability policy is [`governance/capability-matrix.yaml`](governance/capability-matrix.yaml).
 
@@ -76,9 +80,9 @@ It also contains the first **persisted-alpha application boundary**:
 - no ordinary client insert path for `agent_actions` or `provenance_records`;
 - explicit Demo/fail-closed behavior when Supabase public configuration is absent.
 
-**Important evidence boundary:** the dedicated Intellectro Supabase project has all ten currently admitted repository migrations represented in the live migration ledger, including connection relationships, Space invitations, and performance hardening. The live database currently exposes 18 public runtime tables with RLS enabled on all 18. The database/RLS boundary is therefore verified to the admitted scope, but overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**.
+**Important evidence boundary:** the dedicated Collabration Supabase project, currently carrying the historical provider display name `Intellectro`, has all ten currently admitted repository migrations represented in the live migration ledger, including connection relationships, Space invitations, and performance hardening. The live database currently exposes 18 public runtime tables with RLS enabled on all 18. The database/RLS boundary is therefore verified to the admitted scope, but overall live persistence remains **NOT VERIFIED** because production browser auth/session Gate B is still **NOT VERIFIED**.
 
-As of the 2026-09-15 reconciliation, the Vercel project is correctly linked to `ndrorchestration/Intellectro`, but the production health endpoint reports `runtimeMode=misconfigured`, `persistence=disabled`, and `configurationReason=production_persistence_missing`. The correct fail-closed conclusion is that **production persistence is not currently configured**, not that a Supabase binding has been proven. No secret value is required to establish that negative finding.
+As of the 2026-09-15 reconciliation, the Vercel project is correctly linked to the historical repository/provider identifier `ndrorchestration/Intellectro`, but the production health endpoint reports `runtimeMode=misconfigured`, `persistence=disabled`, and `configurationReason=production_persistence_missing`. The correct fail-closed conclusion is that **production persistence is not currently configured**, not that a Supabase binding has been proven. No secret value is required to establish that negative finding.
 
 The Supabase security advisor currently retains 16 `authenticated_security_definer_function_executable` warnings across intentionally exposed authenticated RPCs. These warnings are not automatically vulnerabilities. Existing live tests cover many authority and lifecycle cases, but a complete per-function negative matrix for wrong caller, wrong object, cross-Space access, and invalid/stale lifecycle transitions remains open.
 
@@ -99,7 +103,7 @@ The governance/domain tests require no production credentials. The web applicati
 
 ## Product promise
 
-Intellectro aims to be:
+Collabration aims to be:
 
 - **Socially familiar** — profiles, human connections, Spaces, posts, comments, reactions, and a chronological feed.
 - **Epistemically inspectable** — sources, claims, uncertainty, disputes, corrections, and revision/currentness context can be examined when relevant.
@@ -139,13 +143,13 @@ Intellectro aims to be:
 
 ## Governance evolution direction
 
-Intellectro will continue strengthening these controls through **pattern transfer without authority transfer**. Governance lessons from DGAF and other NDR projects may inform Intellectro, but they do not transfer authorization, evidence, scientific results, or verification state.
+Collabration will continue strengthening these controls through **pattern transfer without authority transfer**. Governance lessons from DGAF and other NDR projects may inform Collabration, but they do not transfer authorization, evidence, scientific results, or verification state.
 
 For consequential AI activity, the target path is:
 
 `request → typed capability → policy decision → approval/verifier when required → execution → durable receipt → challenge/correction`
 
-Before broader autonomous authority is released, Intellectro should independently establish versioned policy, adversarial tests, provenance/decision receipt behavior, rollback or revocation behavior, runtime evidence, and an explicit release decision. Higher-impact actions should prefer separation between the component proposing an action and the authority validating it when practical.
+Before broader autonomous authority is released, Collabration should independently establish versioned policy, adversarial tests, provenance/decision receipt behavior, rollback or revocation behavior, runtime evidence, and an explicit release decision. Higher-impact actions should prefer separation between the component proposing an action and the authority validating it when practical.
 
 See [`ADR 0004 — Pattern transfer without authority transfer`](docs/adr/0004-pattern-transfer-without-authority-transfer.md).
 
@@ -156,6 +160,10 @@ See [`ADR 0004 — Pattern transfer without authority transfer`](docs/adr/0004-p
 MVP proving path:
 
 `Human connects with collaborator → joins shared Space → posts a source-linked claim → Claim Agent analyzes it → another human challenges or qualifies the claim → Community Agent summarizes the disagreement → moderator approves the summary → provenance and action records are preserved`
+
+The brand-level learning loop is complementary rather than an authorization state machine:
+
+`connect → collaborate → calibrate → learn → improve → celebrate → repeat`
 
 ## Repository layout
 
@@ -177,6 +185,7 @@ docs/                   product, architecture, evaluation, threat models, verifi
 
 ## Documentation map
 
+- [`docs/brand/collabration-identity.md`](docs/brand/collabration-identity.md) — canonical product identity, brand language, naming contract, and historical-alias boundary
 - [`docs/product-thesis.md`](docs/product-thesis.md) — canonical positioning, user problem, differentiation, and anti-goals
 - [`docs/architecture.md`](docs/architecture.md) — layers, graphs, boundaries, capability-release progression, and data responsibilities
 - [`docs/governance-kernel.md`](docs/governance-kernel.md) — principals, capabilities, controls, invariants, audit events, and rate limits
@@ -198,4 +207,4 @@ docs/                   product, architecture, evaluation, threat models, verifi
 
 > **Governance kernel first. Social Space immediately. Autonomous agency later, if earned by evidence.**
 
-GitHub is the source of truth for code, schemas, policies, migrations, tests, agent contracts, evaluation assets, and architecture decisions. Vercel owns deployment/runtime facts and the dedicated Intellectro Supabase project owns live database/Auth facts. Live social content and private user data belong in the runtime datastore, not in this repository.
+GitHub is the source of truth for code, schemas, policies, migrations, tests, agent contracts, evaluation assets, and architecture decisions. Vercel owns deployment/runtime facts and the dedicated Collabration Supabase project owns live database/Auth facts. The external GitHub/Vercel/Supabase identifiers that still use `Intellectro` remain operational aliases until those providers are actually renamed. Live social content and private user data belong in the runtime datastore, not in this repository.

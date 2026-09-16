@@ -1,4 +1,4 @@
-// Shared web vocabulary aligned with @intellectro/social-core and the
+// Shared web vocabulary aligned with @collabration/social-core and the
 // persisted claim_responses.response_type constraint.
 export const RESPONSE_TYPES = Object.freeze([
   'support',

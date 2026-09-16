@@ -1,6 +1,8 @@
-# Contributing to Intellectro
+# Contributing to Collabration
 
-Intellectro treats changes to agent authority as governance changes, not ordinary refactors.
+Collabration treats changes to agent authority as governance changes, not ordinary refactors.
+
+The product was formerly named **Intellectro**. Preserve that name only where historical evidence, provider identifiers, old URLs, or chronology require it; use **Collabration** for current product/source documentation.
 
 ## Development
 

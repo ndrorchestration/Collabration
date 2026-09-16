@@ -2,7 +2,9 @@
 
 ## Alpha security posture
 
-Intellectro is pre-production software. The repository intentionally implements deny-by-default agent capabilities, accountable ownership, human approval gates, rate limits, provenance records, and audit events before enabling autonomous public behavior.
+Collabration is pre-production software. The repository intentionally implements deny-by-default agent capabilities, accountable ownership, human approval gates, rate limits, provenance records, and audit events before enabling autonomous public behavior.
+
+The product was formerly named **Intellectro**. Historical repository/provider identifiers using that name remain provenance aliases during the migration and do not change this security posture.
 
 ## Reporting a vulnerability
 

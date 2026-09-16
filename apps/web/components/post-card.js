@@ -1,4 +1,4 @@
-import { deriveTrustContext } from '@intellectro/social-core';
+import { deriveTrustContext } from '@collabration/social-core';
 import { ContextResponseBar } from './context-response-bar';
 import { ProfileHover } from './profile-hover';
 import { ReactionBar } from './reaction-bar';

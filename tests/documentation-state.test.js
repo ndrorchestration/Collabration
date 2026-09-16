@@ -26,8 +26,8 @@ test('MVP roadmap marks repository and relationship database evidence without pr
   assert.match(roadmap, /\[x\] Add correction \/ appeal flow/);
   assert.match(roadmap, /\[x\] Moderator review queue/);
   assert.match(roadmap, /\[x\] Agent action\/audit persistence/);
-  assert.match(roadmap, /\[x\] Apply the pre-relationship canonical migrations to an isolated Intellectro Supabase project and pass the multi-user RLS verification gate/);
-  assert.match(roadmap, /\[x\] Apply and live-verify the connection-relationship migration against the dedicated Intellectro Supabase project/);
+  assert.match(roadmap, /\[x\] Apply the pre-relationship canonical migrations to the dedicated Collabration Supabase project \(provider display name Intellectro\) and pass the multi-user RLS verification gate/);
+  assert.match(roadmap, /\[x\] Apply and live-verify the connection-relationship migration against the dedicated Supabase project/);
   assert.match(roadmap, /\[x\] Live multi-user relationship\/RLS and privacy\/block-precedence probes/);
   assert.match(roadmap, /\[ \] Pass the production browser OTP\/PKCE\/session verification gate/);
   assert.match(roadmap, /\[ \] Exercise real model-backed product loop/);

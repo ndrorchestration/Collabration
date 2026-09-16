@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@intellectro/social-core'],
+  transpilePackages: ['@collabration/social-core'],
   poweredByHeader: false
 };
 
