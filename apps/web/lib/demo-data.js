@@ -1,4 +1,4 @@
-import { createSocialPost, chronologicalFeed } from '@intellectro/social-core';
+import { createSocialPost, chronologicalFeed } from '@collabration/social-core';
 
 export const demoSpace = Object.freeze({
   id: 'space-ai-governance',
