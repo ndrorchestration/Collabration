@@ -13,7 +13,7 @@ export default function HomePage() {
       <main className="login-shell">
         <section className="login-card">
           <p className="eyebrow">Runtime configuration · fail closed</p>
-          <h1>Intellectro is not configured for this deployment.</h1>
+          <h1>Collabration is not configured for this deployment.</h1>
           <p>Production cannot silently fall back to demo state when persistence configuration is absent or partial.</p>
           <p className="context-note">Configuration state: {runtime.reason}</p>
         </section>
@@ -27,8 +27,8 @@ export default function HomePage() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div className="brand-mark">Intellectro</div>
-        <div className="topbar-context">Accountable collaboration preview</div>
+        <div className="brand-mark">Collabration</div>
+        <div className="topbar-context">Metacollaborate. Metacalibrate. Metacelebrate.</div>
         <Link href={configured ? '/login' : '/'} className="account-button">{configured ? 'Sign in' : 'Demo mode'}</Link>
       </header>
       <aside className="left-rail">
