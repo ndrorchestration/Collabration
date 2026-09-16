@@ -20,7 +20,7 @@ test('production preflight admits only the exact configured production contract'
   const { evaluateProductionContract } = await loadPreflight();
   const result = evaluateProductionContract(
     {
-      service: 'intellectro',
+      service: 'collabration',
       status: 'ok',
       commitSha: 'abc123',
       environment: 'production',
@@ -42,7 +42,7 @@ test('production preflight rejects stale deployment identity', async () => {
   const { evaluateProductionContract } = await loadPreflight();
   const result = evaluateProductionContract(
     {
-      service: 'intellectro',
+      service: 'collabration',
       status: 'ok',
       commitSha: 'stale-sha',
       environment: 'production',
@@ -65,7 +65,7 @@ test('production preflight rejects disabled persistence or non-production runtim
   const { evaluateProductionContract } = await loadPreflight();
   const result = evaluateProductionContract(
     {
-      service: 'intellectro',
+      service: 'collabration',
       status: 'ok',
       commitSha: 'abc123',
       environment: 'preview',
@@ -90,7 +90,7 @@ test('production preflight rejects authority drift even when deployment identity
   const { evaluateProductionContract } = await loadPreflight();
   const result = evaluateProductionContract(
     {
-      service: 'intellectro',
+      service: 'collabration',
       status: 'ok',
       commitSha: 'abc123',
       environment: 'production',
