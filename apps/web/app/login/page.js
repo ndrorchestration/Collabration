@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }) {
 
   return (
     <main className="login-shell">
-      <Link href="/" className="brand-mark">Intellectro</Link>
+      <Link href="/" className="brand-mark">Collabration</Link>
       <section className="login-card">
         <p className="eyebrow">Account boundary</p>
         <h1>Sign in without hiding the system state.</h1>
