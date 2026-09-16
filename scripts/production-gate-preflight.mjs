@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
+// Provider alias remains historical/operational until the Vercel project slug is actually renamed.
 const DEFAULT_HEALTH_URL = 'https://intellectro.vercel.app/api/health';
 const EXPECTED_POLICY_VERSION = '0.1.0-alpha';
 
@@ -8,7 +9,7 @@ export function evaluateProductionContract(contract, expectedSha) {
   const reasons = [];
 
   if (!expectedSha) reasons.push('expected commit SHA is required');
-  if (contract?.service !== 'intellectro') reasons.push('service must be intellectro');
+  if (contract?.service !== 'collabration') reasons.push('service must be collabration');
   if (contract?.status !== 'ok') reasons.push('deployment status must be ok');
   if (contract?.commitSha !== expectedSha) reasons.push('commit SHA does not match the admitted SHA');
   if (contract?.environment !== 'production') reasons.push('environment must be production');
