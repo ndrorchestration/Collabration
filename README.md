@@ -143,7 +143,7 @@ Collabration aims to be:
 
 ## Governance evolution direction
 
-Collabration will continue strengthening these controls through **pattern transfer without authority transfer**. Governance lessons from DGAF and other NDR projects may inform Collabration, but they do not transfer authorization, evidence, scientific results, or verification state.
+Collabration will continue strengthening these controls through **pattern transfer without authority transfer**. Governance lessons from the Agentic Governance Orchestrator (proposed successor name for DGAF) and other NDR projects may inform Collabration, but they do not transfer authorization, evidence, scientific results, or verification state.
 
 For consequential AI activity, the target path is:
 

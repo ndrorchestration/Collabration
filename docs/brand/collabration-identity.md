@@ -26,6 +26,8 @@ Supporting product description:
 
 Use **Collabration** for all current product, UI, repository-facing documentation, package metadata, and new ecosystem records.
 
+**Proposed portfolio display exception (owner-directed, 2026-11-26; pending admission):** The NDR Orchestration GitHub profile may stylize the project heading as **Collab-bration**. This is a presentation-only alias for the canonical Collabration product, not a new name or permission to alter the UI, repository slug, package scope, provider identifiers, or historical records. The existing naming contract remains controlling until this exception is admitted.
+
 Use lowercase **collabration** for machine identifiers and slugs where a lowercase identifier is required.
 
 Use npm scope **`@collabration/*`** for workspace packages.
